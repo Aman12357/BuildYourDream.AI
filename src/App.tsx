@@ -12,6 +12,7 @@ function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [notice, setNotice] = useState("");
   const [isCheckingApi, setIsCheckingApi] = useState(false);
+  const [generatedHtml, setGeneratedHtml] = useState("");
 
   async function startBuild(value = prompt) {
     const cleaned = value.trim();
@@ -21,6 +22,7 @@ function App() {
     }
     setPrompt(cleaned);
     setNotice("");
+    setGeneratedHtml("");
     setIsCheckingApi(true);
     const apiBase = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8787").replace(/\/$/, "");
     try {
@@ -30,12 +32,13 @@ function App() {
         body: JSON.stringify({ prompt: cleaned }),
       });
       const result = await response.json().catch(() => ({}));
-      if (response.status === 501 && result.code === "GENERATION_NOT_CONFIGURED") {
-        setNotice("The API connection is working, but AI website generation is not configured yet. Next we need to connect an AI provider and a safe preview sandbox.");
-      } else if (!response.ok) {
+      if (!response.ok) {
         setNotice(result.error || "The API returned an error. Check that the backend is running.");
+      } else if (typeof result.html === "string") {
+        setGeneratedHtml(result.html);
+        setNotice(result.message || "Your website draft is ready to preview.");
       } else {
-        setNotice("The API accepted the request.");
+        setNotice("The API responded, but did not return a website preview.");
       }
     } catch {
       setNotice("Cannot reach the API. Start the backend in the server folder with npm install and npm run dev, then try again.");
@@ -78,6 +81,11 @@ function App() {
             </div>
             {notice && <p className="notice" role="status">{notice}</p>}
           </div>
+          {generatedHtml && <section className="generated-preview" aria-label="Generated website preview">
+            <div className="generated-preview-heading"><div><p className="section-kicker">YOUR FIRST DRAFT</p><h2>Your website preview</h2></div><button className="button button-dark button-small" onClick={() => { const file = new Blob([generatedHtml], { type: "text/html" }); const url = URL.createObjectURL(file); const link = document.createElement("a"); link.href = url; link.download = "buildyourdream-website.html"; link.click(); URL.revokeObjectURL(url); }}>Download HTML <ArrowDown size={15} /></button></div>
+            <iframe title="Generated website preview" sandbox="" referrerPolicy="no-referrer" srcDoc={generatedHtml} />
+            <p className="preview-safety-note">Preview is sandboxed. Forms, scripts, and external services are intentionally disabled in this first version.</p>
+          </section>}
           <div className="trust-note"><span className="trust-check"><Check size={13} /></span> Start with an idea. Make it yours. <span className="trust-separator">·</span> No coding experience required.</div>
           <a className="scroll-link" href="#examples">NEED A LITTLE INSPIRATION? <ArrowDown size={14} /></a>
         </section>
