@@ -1,20 +1,20 @@
 # BuildYourDream.AI
 
-BuildYourDream.AI is an AI website-builder project. This repository contains the first frontend foundation and a separate API starter.
+BuildYourDream.AI is an AI website-builder project with a React + TypeScript frontend and a separate Node.js API.
 
 ## Current status
 
-- Responsive React + TypeScript + Vite homepage
-- Prompt input and example website concepts
-- Frontend prompt form calls the backend API
-- Express API health endpoint and prompt validation
-- The API explicitly reports that real generation is not configured yet
-- Authentication, database persistence, credit billing, AI generation, and isolated preview execution are still planned
+- Responsive homepage and prompt-based builder
+- OpenAI-backed generation endpoint for standalone HTML/CSS website drafts
+- Sandboxed browser preview and downloadable HTML when the API key is configured
+- API health endpoint, input validation, rate limiting, and security headers
+- Authentication, database persistence, project history, interactive generated scripts, credit billing, and one-click publishing are not implemented yet
 
 ## Requirements
 
 - Node.js 20 or newer
 - npm
+- An OpenAI API key to generate website drafts
 
 ## Run locally
 
@@ -27,7 +27,7 @@ cd server
 npm install
 ```
 
-Copy `server/.env.example` to `server/.env` (Windows Command Prompt: `copy .env.example .env` after entering `server`), then run:
+Copy `server/.env.example` to `server/.env` (Windows Command Prompt: `copy .env.example .env` after entering `server`) and add your own `OPENAI_API_KEY` in that file. Never commit the real key. Then run:
 
 ```bash
 npm run dev
@@ -46,30 +46,24 @@ npm run dev
 
 Open the local URL printed by Vite, usually `http://localhost:5173`.
 
-The frontend uses `VITE_API_BASE_URL` if set; otherwise it calls `http://localhost:8787`. The root `.env.example` documents this optional setting.
+The frontend uses `VITE_API_BASE_URL` if set; otherwise it calls `http://localhost:8787`.
 
-## Production build
+## Production hosting
 
-From the repository root:
-
-```bash
-npm run build
-npm run preview
-```
+- Frontend: `https://buildyourdream-ai.onrender.com`
+- API: `https://buildyourdream-api.onrender.com`
+- API key must be set as `OPENAI_API_KEY` in the API service's environment settings, not in frontend variables or GitHub.
 
 ## Roadmap
 
-1. Verify frontend and API locally
+1. Configure the provider key and verify a real generated draft
 2. Add authentication with separate user and admin roles
 3. Add PostgreSQL persistence and project ownership
-4. Connect an AI provider through a server-side adapter
-5. Build a restricted preview sandbox for generated websites
-6. Add free quotas, usage metering, credit reservations, and billing
-7. Deploy frontend and backend with environment secrets configured
+4. Add free quotas, usage metering, credit reservations, and billing
+5. Add safer project editing and controlled publishing
 
 ## Security notes
 
-- Never commit API keys, passwords, database URLs, or local `.env` files.
-- Real website generation is not enabled in this starter.
-- Never execute generated user code directly inside the API server process.
-- Before charging users, implement server-side authentication, project-level authorization, usage limits, atomic credit reservations, and payment webhook verification.
+- Never commit API keys, passwords, database credentials, or other secrets.
+- Generated HTML is previewed in a sandbox with scripts disabled.
+- Do not run generated code directly inside the API process.
