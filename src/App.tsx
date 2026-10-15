@@ -11,15 +11,37 @@ function App() {
   const [prompt, setPrompt] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [notice, setNotice] = useState("");
+  const [isCheckingApi, setIsCheckingApi] = useState(false);
 
-  function startBuild(value = prompt) {
+  async function startBuild(value = prompt) {
     const cleaned = value.trim();
     if (!cleaned) {
       setNotice("Describe the website you want to build first.");
       return;
     }
     setPrompt(cleaned);
-    setNotice("Your idea is ready. The AI generation service will be connected in the next phase; this starter does not generate a live website yet.");
+    setNotice("");
+    setIsCheckingApi(true);
+    const apiBase = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8787").replace(/\\/$/, "");
+    try {
+      const response = await fetch(`${apiBase}/api/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: cleaned }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (response.status === 501 && result.code === "GENERATION_NOT_CONFIGURED") {
+        setNotice("The API connection is working, but AI website generation is not configured yet. Next we need to connect an AI provider and a safe preview sandbox.");
+      } else if (!response.ok) {
+        setNotice(result.error || "The API returned an error. Check that the backend is running.");
+      } else {
+        setNotice("The API accepted the request.");
+      }
+    } catch {
+      setNotice("Cannot reach the API. Start the backend in the server folder with npm install and npm run dev, then try again.");
+    } finally {
+      setIsCheckingApi(false);
+    }
   }
 
   return (
@@ -52,7 +74,7 @@ function App() {
             <textarea value={prompt} onChange={(event) => { setPrompt(event.target.value); setNotice(""); }} placeholder="A website for my coffee shop with a menu, our story, and a way to order online..." rows={3} maxLength={1200} aria-label="Describe the website you want to create" />
             <div className="builder-bottom">
               <span className="prompt-hint"><Sparkles size={14} /> Be as specific as you like</span>
-              <button className="button button-dark" onClick={() => startBuild()}><WandSparkles size={16} /> Build my website <ArrowRight size={16} /></button>
+              <button className="button button-dark" onClick={() => startBuild()} disabled={isCheckingApi}><WandSparkles size={16} /> {isCheckingApi ? "Checking API..." : "Build my website"} <ArrowRight size={16} /></button>
             </div>
             {notice && <p className="notice" role="status">{notice}</p>}
           </div>
