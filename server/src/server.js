@@ -5,6 +5,8 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 
 const app = express();
+// Render runs this service behind one trusted reverse-proxy hop.
+app.set("trust proxy", 1);
 const port = Number(process.env.PORT || 8787);
 const clientOrigin = process.env.CLIENT_ORIGIN || "http://localhost:5173";
 const apiKey = process.env.OPENAI_API_KEY;
