@@ -19,7 +19,7 @@ function escapeHtml(value) {
 function makeFreeWebsite(prompt) {
   const safePrompt = escapeHtml(prompt);
   const title = escapeHtml(
-    prompt.replace(/^(create|build|make|design)\\s+(a|an|the)?\\s*/i, "").split(/[.!?\\n]/)[0].trim().slice(0, 72) || "Your next big idea"
+    prompt.replace(/^(create|build|make|design)\s+(a|an|the)?\s*/i, "").split(/[.!?\n]/)[0].trim().slice(0, 72) || "Your next big idea"
   );
   const lower = prompt.toLowerCase();
   const isPortfolio = /portfolio|designer|developer|photographer|artist/.test(lower);
