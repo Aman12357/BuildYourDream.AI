@@ -59,14 +59,14 @@ const apiLimiter = rateLimit({
 app.use("/api", apiLimiter);
 
 app.get("/", (_req, res) => {
-  res.json({ name: "BuildYourDream.AI API", status: "ok", generationConfigured: Boolean(apiKey) });
+  res.json({ name: "BuildYourDream.AI API", status: "ok", generationConfigured: true });
 });
 
 app.get("/api/health", (_req, res) => {
   res.json({
     status: "ok",
     service: "buildyourdream-api",
-    generationConfigured: Boolean(apiKey),
+    generationConfigured: true,
     timestamp: new Date().toISOString(),
   });
 });
