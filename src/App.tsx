@@ -22,7 +22,7 @@ function App() {
     setPrompt(cleaned);
     setNotice("");
     setIsCheckingApi(true);
-    const apiBase = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8787").replace(/\\/$/, "");
+    const apiBase = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8787").replace(/\/$/, "");
     try {
       const response = await fetch(`${apiBase}/api/generate`, {
         method: "POST",
