@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowDown, ArrowRight, Check, Code2, Layers3, Menu, Sparkles, WandSparkles, X } from "lucide-react";
+import { ArrowDown, ArrowRight, Check, Code2, Download, Layers3, Menu, Sparkles, WandSparkles, X } from "lucide-react";
 
 const examples = [
   { title: "A portfolio that feels like you", category: "Portfolio", prompt: "Create a minimal portfolio for a product designer with a bold type-led hero, selected work, and a contact section." },
@@ -7,12 +7,15 @@ const examples = [
   { title: "A launch page with momentum", category: "Startup", prompt: "Create a focused SaaS landing page with a clear value proposition, feature cards, product preview, and a waitlist form." },
 ];
 
+type BuildPlan = { summary: string; steps: string[] };
+
 function App() {
   const [prompt, setPrompt] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [notice, setNotice] = useState("");
   const [isCheckingApi, setIsCheckingApi] = useState(false);
-  const [generatedHtml, setGeneratedHtml] = useState("");
+  const [plan, setPlan] = useState<BuildPlan | null>(null);
+  const [isGeneratingProject, setIsGeneratingProject] = useState(false);
 
   async function startBuild(value = prompt) {
     const cleaned = value.trim();
@@ -22,28 +25,59 @@ function App() {
     }
     setPrompt(cleaned);
     setNotice("");
-    setGeneratedHtml("");
+    setPlan(null);
     setIsCheckingApi(true);
     const apiBase = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8787").replace(/\/$/, "");
     try {
-      const response = await fetch(`${apiBase}/api/generate`, {
+      const response = await fetch(`${apiBase}/api/plan`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: cleaned }),
       });
       const result = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        setNotice(result.error || "The API returned an error. Check that the backend is running.");
-      } else if (typeof result.html === "string") {
-        setGeneratedHtml(result.html);
-        setNotice(result.message || "Your website draft is ready to preview.");
-      } else {
-        setNotice("The API responded, but did not return a website preview.");
-      }
+      if (!response.ok) setNotice(result.error || "Could not prepare a plan. Check that the backend is running.");
+      else if (result.plan && Array.isArray(result.plan.steps)) {
+        setPlan(result.plan as BuildPlan);
+        setNotice("Plan ready. Review the steps, then generate your full-stack project.");
+      } else setNotice("The API responded, but did not return a valid plan.");
     } catch {
-      setNotice("Cannot reach the API. Start the backend in the server folder with npm install and npm run dev, then try again.");
+      setNotice("Cannot reach the API. Please check that the backend is running, then try again.");
     } finally {
       setIsCheckingApi(false);
+    }
+  }
+
+  async function generateProject() {
+    if (!plan || !prompt.trim()) return;
+    setNotice("");
+    setIsGeneratingProject(true);
+    const apiBase = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8787").replace(/\/$/, "");
+    try {
+      const response = await fetch(`${apiBase}/api/generate-project`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({}));
+        setNotice(result.error || "Project generation failed. Please try again.");
+        return;
+      }
+      const file = await response.blob();
+      const url = URL.createObjectURL(file);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "buildyourdream-full-stack-project.zip";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+      const count = response.headers.get("X-Generated-File-Count");
+      setNotice(`Your full-stack project ZIP is ready${count ? ` with ${count} generated source files` : ""}. Unzip it, read README.md, configure the example environment variables, and test before publishing.`);
+    } catch {
+      setNotice("Cannot reach the API or download the project. Please try again.");
+    } finally {
+      setIsGeneratingProject(false);
     }
   }
 
@@ -77,14 +111,16 @@ function App() {
             <textarea value={prompt} onChange={(event) => { setPrompt(event.target.value); setNotice(""); }} placeholder="A website for my coffee shop with a menu, our story, and a way to order online..." rows={3} maxLength={1200} aria-label="Describe the website you want to create" />
             <div className="builder-bottom">
               <span className="prompt-hint"><Sparkles size={14} /> Be as specific as you like</span>
-              <button className="button button-dark" onClick={() => startBuild()} disabled={isCheckingApi}><WandSparkles size={16} /> {isCheckingApi ? "Checking API..." : "Build my website"} <ArrowRight size={16} /></button>
+              <button className="button button-dark" onClick={() => startBuild()} disabled={isCheckingApi}><WandSparkles size={16} /> {isCheckingApi ? "Preparing plan..." : "Create my build plan"} <ArrowRight size={16} /></button>
             </div>
             {notice && <p className="notice" role="status">{notice}</p>}
           </div>
-          {generatedHtml && <section className="generated-preview" aria-label="Generated website preview">
-            <div className="generated-preview-heading"><div><p className="section-kicker">YOUR FIRST DRAFT</p><h2>Your website preview</h2></div><button className="button button-dark button-small" onClick={() => { const file = new Blob([generatedHtml], { type: "text/html" }); const url = URL.createObjectURL(file); const link = document.createElement("a"); link.href = url; link.download = "buildyourdream-website.html"; link.click(); URL.revokeObjectURL(url); }}>Download HTML <ArrowDown size={15} /></button></div>
-            <iframe title="Generated website preview" sandbox="" referrerPolicy="no-referrer" srcDoc={generatedHtml} />
-            <p className="preview-safety-note">Preview is sandboxed. Forms, scripts, and external services are intentionally disabled in this first version.</p>
+          {plan && <section className="plan-panel" aria-label="Website build plan">
+            <div className="plan-heading"><div><p className="section-kicker">YOUR BUILD PLAN</p><h2>Here's what I'll build.</h2></div><span className="plan-ready"><Check size={14} /> Plan ready</span></div>
+            <p className="plan-summary">{plan.summary}</p>
+            <ol className="plan-steps">{plan.steps.map((step, index) => <li key={step}><span>{String(index + 1).padStart(2, "0")}</span><p>{step}</p></li>)}</ol>
+            <div className="plan-footer"><p><strong>Project includes:</strong> frontend, backend API, PostgreSQL schema, environment example, and setup guide.</p><button className="button button-dark" onClick={generateProject} disabled={isGeneratingProject}>{isGeneratingProject ? "Generating project..." : "Generate full-stack project"} {isGeneratingProject ? <Sparkles size={16} /> : <Download size={16} />}</button></div>
+            <p className="preview-safety-note">Generation requires a working Gemini or Groq API key on the backend. Review and test generated code before production use.</p>
           </section>}
           <div className="trust-note"><span className="trust-check"><Check size={13} /></span> Start with an idea. Make it yours. <span className="trust-separator">·</span> No coding experience required.</div>
           <a className="scroll-link" href="#examples">NEED A LITTLE INSPIRATION? <ArrowDown size={14} /></a>
@@ -104,7 +140,7 @@ function App() {
                   {index === 1 && <div className="preview-store"><span>OBJECTS FOR SLOW LIVING</span><strong>Make room<br />for <em>good things.</em></strong><div className="store-products"><i /><i /><i /></div><small>SHOP THE COLLECTION ↗</small></div>}
                   {index === 2 && <div className="preview-startup"><span>LESS BUSY. MORE BUILDING.</span><strong>Your work,<br />in a better <em>flow.</em></strong><div className="startup-ui"><i /><i /><i /><i /></div><small>GET EARLY ACCESS ↗</small></div>}
                 </div>
-                <div className="example-meta"><div><span className="example-category">{example.category}</span><h3>{example.title}</h3></div><button className="icon-button" onClick={() => { setPrompt(example.prompt); setNotice(""); document.getElementById("builder")?.scrollIntoView({ behavior: "smooth" }); }} aria-label={`Use ${example.category} example`}><ArrowRight size={18} /></button></div>
+                <div className="example-meta"><div><span className="example-category">{example.category}</span><h3>{example.title}</h3></div><button className="icon-button" onClick={() => { setPrompt(example.prompt); setNotice(""); setPlan(null); document.getElementById("builder")?.scrollIntoView({ behavior: "smooth" }); }} aria-label={`Use ${example.category} example`}><ArrowRight size={18} /></button></div>
               </article>
             ))}
           </div>
