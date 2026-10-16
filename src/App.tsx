@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowDown, ArrowRight, Check, Code2, Download, Layers3, Menu, Sparkles, WandSparkles, X } from "lucide-react";
+import { ArrowRight, Check, Code2, Download, Layers3, Menu, Sparkles, WandSparkles, X } from "lucide-react";
 
 const examples = [
   { title: "A portfolio that feels like you", category: "Portfolio", prompt: "Create a minimal portfolio for a product designer with a bold type-led hero, selected work, and a contact section." },
