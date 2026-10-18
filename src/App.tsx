@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Activity, ArrowDownRight, ArrowRight, Bot, Check, ChevronDown, CircleAlert,
-  CircleCheck, Clock3, Code2, Command, Download, Eye, FileCode2, FolderKanban,
-  GitBranch, Layers3, LayoutDashboard, LayoutTemplate, Menu, MessageSquareText, Maximize2, Minimize2, Monitor, Search,
+  Activity, ArrowDownRight, ArrowRight, Bot, CalendarDays, ChartNoAxesCombined, Check, ChevronDown, CircleAlert,
+  CircleCheck, Clock3, Code2, Command, Download, Eye, FileCode2, FileSearch, FolderKanban,
+  GitBranch, Layers3, LayoutDashboard, LayoutTemplate, Menu, MessageSquareText, Maximize2, Minimize2, Monitor, Search, ShoppingBag,
   Play, Plus, RefreshCw, ShieldCheck, Smartphone, Sparkles, Terminal, WandSparkles, X
 } from "lucide-react";
 
 type BuildPlan = { summary: string; steps: string[] };
-type View = "studio" | "templates" | "agents" | "projects";
+type View = "home" | "studio" | "templates" | "agents" | "projects";
 type AgentState = "Ready" | "Waiting" | "Complete" | "Working";
 const examples = [
   { title: "Independent designer portfolio", category: "Portfolio", prompt: "Build a polished portfolio for an independent product designer. Include a bold editorial hero, selected projects, about section, testimonials, and a contact form. Use responsive layouts and accessible components." },
@@ -56,7 +56,7 @@ const agents = [
 ];
 
 function App() {
-  const [view, setView] = useState<View>("studio");
+  const [view, setView] = useState<View>("home");
   const [templateSearch, setTemplateSearch] = useState("");
   const [templateCategory, setTemplateCategory] = useState("All templates");
   const [templatePage, setTemplatePage] = useState(1);
@@ -158,6 +158,7 @@ function App() {
   }
 
   const navItems: { id: View; label: string; icon: typeof LayoutDashboard }[] = [
+    { id: "home", label: "Home", icon: LayoutDashboard },
     { id: "studio", label: "Website studio", icon: Monitor },
     { id: "templates", label: "Template library", icon: LayoutTemplate },
     { id: "agents", label: "Agent command", icon: Activity },
@@ -166,7 +167,7 @@ function App() {
 
   return <div className="hybrid-app">
     <aside className={menuOpen ? "hybrid-sidebar sidebar-open" : "hybrid-sidebar"}>
-      <a className="hybrid-brand" href="#studio" onClick={() => setView("studio")}><span className="hybrid-brand-mark"><Layers3 size={19}/></span><span>BuildYourDream<span>.AI</span><small>AI WEBSITE WORKSPACE</small></span></a>
+      <a className="hybrid-brand" href="#home" onClick={() => setView("home")}><span className="hybrid-brand-mark"><Layers3 size={19}/></span><span>BuildYourDream<span>.AI</span><small>AI WEBSITE WORKSPACE</small></span></a>
       <div className="sidebar-section-label">WORKSPACE</div>
       <nav className="hybrid-nav" aria-label="Workspace navigation">
         {navItems.map(item => { const Icon = item.icon; return <button key={item.id} className={view === item.id ? "hybrid-nav-item active" : "hybrid-nav-item"} onClick={() => { setView(item.id); setMenuOpen(false); }}><Icon size={17}/><span>{item.label}</span>{item.id === "agents" && plan && <i className="nav-count">1</i>}</button>; })}
@@ -185,6 +186,58 @@ function App() {
         <div className="breadcrumb"><span>Workspace</span><ArrowRight size={13}/><strong>{navItems.find(n => n.id === view)?.label}</strong></div>
         <div className="topbar-right"><span className="prototype-chip"><span/> Frontend prototype</span><button className="help-button" onClick={() => { setNotice("This prototype calls /api/plan and /api/preview-project. The generated HTML is displayed in a sandboxed iframe; agent cards are workflow visibility, not separate autonomous services."); setView("studio"); }}>How it works</button><span className="top-avatar">A</span></div>
       </header>
+
+      {view === "home" && <div className="builder-home">
+        <section className="builder-home-hero">
+          <div className="home-hero-copy">
+            <div className="home-eyebrow"><span/> YOUR IDEA, YOUR WEBSITE <span className="home-eyebrow-line"/></div>
+            <h1>Make a website<br/>that feels <em>like you.</em></h1>
+            <p className="home-hero-description">Start with a conversation. Get a custom website direction, explore thousands of layouts, and shape the result around your vision.</p>
+            <div className="home-hero-actions">
+              <button className="home-primary-button" onClick={() => { setView("studio"); setNotice(""); document.getElementById("website-prompt")?.focus(); }}>Create with AI <ArrowRight size={16}/></button>
+              <button className="home-secondary-button" onClick={() => setView("templates")}>Explore templates <LayoutTemplate size={16}/></button>
+            </div>
+            <div className="home-trust-line"><span><Check size={13}/> Start with a prompt</span><span><Check size={13}/> Preview before launch</span><span><Check size={13}/> Desktop & mobile</span></div>
+          </div>
+          <div className="home-hero-visual" aria-label="Illustration of a website being created">
+            <div className="home-float-tag"><Sparkles size={14}/> Your vision, built with AI</div>
+            <div className="home-browser-card">
+              <div className="home-browser-top"><span/><span/><span/><div>yourbrand.site</div><i>↗</i></div>
+              <div className="home-mock-site">
+                <div className="home-mock-nav"><b>FORME<span>.</span></b><span>Studio</span><span>Journal</span><span>About</span><i>Let's talk ↗</i></div>
+                <div className="home-mock-hero"><div><small>DESIGNED FOR WHAT'S NEXT</small><strong>Make room<br/>for <em>better.</em></strong><p>Thoughtful design for brands with something to say.</p><span>Explore our work ↗</span></div><div className="home-mock-photo"><div className="home-photo-shape shape-one"/><div className="home-photo-shape shape-two"/><div className="home-photo-label">OBJECTS / 2026</div></div></div>
+                <div className="home-mock-bottom"><span>Independent creative studio</span><span>Scroll to explore ↓</span></div>
+              </div>
+            </div>
+            <div className="home-float-card"><span className="home-float-icon"><Check size={15}/></span><div><strong>Responsive by design</strong><small>Layouts for every screen</small></div></div>
+            <div className="home-orb home-orb-one"/><div className="home-orb home-orb-two"/>
+          </div>
+        </section>
+
+        <section className="home-capability-strip"><span>ONE WORKSPACE TO GO FROM</span><div><span><MessageSquareText size={16}/> Idea</span><ArrowRight size={15}/><span><Layers3 size={16}/> Design</span><ArrowRight size={15}/><span><Monitor size={16}/> Preview</span><ArrowRight size={15}/><span><Sparkles size={16}/> Refine</span></div></section>
+
+        <section className="home-feature-section">
+          <div className="home-section-heading"><div><div className="home-section-kicker">A BETTER WAY TO BUILD</div><h2>AI speed. <em>Your creative control.</em></h2><p>Start automatically, then keep shaping the website until it matches your idea.</p></div><button className="home-text-link" onClick={() => setView("studio")}>Open website studio <ArrowRight size={15}/></button></div>
+          <div className="home-feature-grid">
+            <article className="home-feature-card home-feature-chat"><div className="home-feature-icon"><MessageSquareText size={19}/></div><span className="home-feature-label">01 / CONVERSATIONAL BUILD</span><h3>Describe it in your own words.</h3><p>Turn a natural-language brief into a structured plan, then request a generated website preview from your connected backend.</p><button onClick={() => { setPrompt("Create a complete responsive website from my idea. Ask for missing details, propose a visual direction and page structure, then generate a real website preview with useful interactions."); setView("studio"); setNotice(""); }}>Start with a conversation <ArrowRight size={14}/></button><div className="home-chat-preview"><span className="home-chat-avatar">BY</span><div><small>YOUR BRIEF</small><p>Build a calm, modern site for my design studio…</p></div><Sparkles size={15}/></div></article>
+            <article className="home-feature-card home-feature-templates"><div className="home-feature-icon"><LayoutTemplate size={19}/></div><span className="home-feature-label">02 / DESIGN STARTING POINTS</span><h3>Find a layout that fits.</h3><p>Explore 2,000 template combinations, organized by industry, layout pattern, and visual style.</p><button onClick={() => setView("templates")}>Browse template library <ArrowRight size={14}/></button><div className="home-template-mini"><div/><div/><div/></div></article>
+            <article className="home-feature-card home-feature-edit"><div className="home-feature-icon"><Eye size={19}/></div><span className="home-feature-label">03 / PREVIEW & REFINE</span><h3>See the result as you build.</h3><p>Review the generated HTML in the workspace, switch between desktop and mobile, and open a full-screen preview.</p><button onClick={() => setView("studio")}>Open the preview workspace <ArrowRight size={14}/></button><div className="home-device-mini"><Monitor size={27}/><Smartphone size={20}/><span><Check size={12}/> Desktop + mobile</span></div></article>
+          </div>
+        </section>
+
+        <section className="home-business-section">
+          <div className="home-business-copy"><div className="home-section-kicker">MORE THAN A LANDING PAGE</div><h2>Build for what your idea <em>needs next.</em></h2><p>Choose a business direction and we’ll prepare a detailed brief for the AI builder. Availability of real commerce, booking, and publishing integrations depends on the generated code and connected services.</p><button className="home-primary-button" onClick={() => setView("studio")}>Build your next idea <ArrowRight size={15}/></button></div>
+          <div className="home-business-grid">
+            <button onClick={() => { setPrompt("Create a responsive e-commerce website with product categories, product detail pages, a cart interface, shipping and returns information, and a clear checkout integration plan. Clearly mark any payment integration that still needs credentials."); setSelectedProject("Online store"); setView("studio"); setNotice(""); }}><span className="business-feature-icon"><ShoppingBag size={18}/></span><strong>Online store</strong><small>Products, categories & cart</small><ArrowRight size={15}/></button>
+            <button onClick={() => { setPrompt("Create a service-business website with service pages, an appointment booking interface, availability states, contact details, and a clear plan for connecting a real booking provider."); setSelectedProject("Booking website"); setView("studio"); setNotice(""); }}><span className="business-feature-icon"><CalendarDays size={18}/></span><strong>Bookings & services</strong><small>Service pages and scheduling flow</small><ArrowRight size={15}/></button>
+            <button onClick={() => { setPrompt("Create a responsive editorial blog with a featured article, article listing, category filters, article detail layout, author information, and SEO-friendly headings and metadata."); setSelectedProject("Blog and publication"); setView("studio"); setNotice(""); }}><span className="business-feature-icon"><FileSearch size={18}/></span><strong>Blog & publishing</strong><small>Articles and content structure</small><ArrowRight size={15}/></button>
+            <button onClick={() => { setPrompt("Create a search-friendly business website and include suggested page titles, meta descriptions, heading structure, accessible image alt text, internal links, and a practical SEO review checklist."); setSelectedProject("SEO-ready website"); setView("studio"); setNotice(""); }}><span className="business-feature-icon"><ChartNoAxesCombined size={18}/></span><strong>SEO foundations</strong><small>Metadata and optimization checklist</small><ArrowRight size={15}/></button>
+          </div>
+        </section>
+
+        <section className="home-steps-section"><div className="home-section-heading"><div><div className="home-section-kicker">FROM IDEA TO FIRST PREVIEW</div><h2>Your next website starts <em>here.</em></h2></div></div><div className="home-steps-grid"><div><span>01</span><h3>Tell us the idea</h3><p>Share your audience, goals, style, and the features you need.</p></div><div><span>02</span><h3>Shape the plan</h3><p>Review the suggested structure before asking the builder to generate.</p></div><div><span>03</span><h3>Preview and improve</h3><p>Inspect the output, switch device views, and refine the brief.</p></div></div><div className="home-bottom-cta"><div><span>READY WHEN YOU ARE</span><h2>Let's make your idea real.</h2></div><button className="home-primary-button" onClick={() => { setView("studio"); setNotice(""); }}>Create with AI <ArrowRight size={16}/></button></div></section>
+        <footer className="home-footer"><a href="#home" onClick={() => setView("home")}><Layers3 size={17}/> BuildYourDream.AI</a><span>Made for your next big idea.</span><div><button onClick={() => setView("templates")}>Templates</button><button onClick={() => setView("studio")}>Website studio</button></div></footer>
+      </div>}
 
       {view === "studio" && <div className="hybrid-content">
         <div className="view-heading"><div><div className="eyebrow"><Sparkles size={14}/> WEBSITE STUDIO</div><h1>From brief to <em>build.</em></h1><p>Describe the outcome. Review the plan. Keep the build process visible.</p></div><div className="heading-actions"><span className="autosave-label"><span/> Local draft</span><button className="outline-action" onClick={() => { setPrompt(""); setPlan(null); setPreviewHtml(""); setNotice(""); setSelectedProject("New website"); log("Started a fresh draft."); }}><Plus size={15}/> New brief</button></div></div>
