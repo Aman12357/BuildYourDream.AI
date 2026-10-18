@@ -1,4 +1,5 @@
 import { useState } from "react";
+import StaffWorkspace from "./StaffWorkspace";
 import { ArrowDown, ArrowRight, Check, Code2, Download, Layers3, Menu, Sparkles, WandSparkles, X } from "lucide-react";
 
 const examples = [
@@ -16,6 +17,7 @@ function App() {
   const [isCheckingApi, setIsCheckingApi] = useState(false);
   const [plan, setPlan] = useState<BuildPlan | null>(null);
   const [isGeneratingProject, setIsGeneratingProject] = useState(false);
+  const [workspaceOpen, setWorkspaceOpen] = useState(false);
 
   async function startBuild(value = prompt) {
     const cleaned = value.trim();
@@ -81,6 +83,8 @@ function App() {
     }
   }
 
+  if (workspaceOpen) return <StaffWorkspace onBack={() => setWorkspaceOpen(false)} />;
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -92,10 +96,11 @@ function App() {
           <a href="#how-it-works" onClick={() => setMenuOpen(false)}>How it works</a>
           <a href="#examples" onClick={() => setMenuOpen(false)}>Explore ideas</a>
           <a href="#builder" onClick={() => setMenuOpen(false)}>Builder</a>
+          <button className="workspace-nav-link" onClick={() => { setMenuOpen(false); setWorkspaceOpen(true); }}>Team workspace <ArrowRight size={14}/></button>
           <button className="mobile-close" onClick={() => setMenuOpen(false)} aria-label="Close menu"><X size={20} /></button>
         </nav>
         <div className="topbar-actions">
-          <button className="text-button" onClick={() => setNotice("Authentication will be added in Phase 2.")}>Log in</button>
+          <button className="text-button" onClick={() => setWorkspaceOpen(true)}>Team login</button>
           <button className="button button-dark button-small" onClick={() => document.getElementById("builder")?.scrollIntoView({ behavior: "smooth" })}>Start building <ArrowRight size={15} /></button>
         </div>
         <button className="mobile-menu" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">{menuOpen ? <X size={21} /> : <Menu size={21} />}</button>
