@@ -132,7 +132,7 @@ function validateFiles(payload) {
 app.disable("x-powered-by");
 app.use(helmet());
 const allowedOrigins = new Set([...clientOrigin.split(",").map((value) => value.trim()), "https://buildyourdream-ai.onrender.com", "http://localhost:5173", "http://127.0.0.1:5173"]);
-app.use(cors({ origin: (origin, callback) => callback(null, !origin || allowedOrigins.has(origin)), methods: ["GET", "POST"], allowedHeaders: ["Content-Type"] }));
+app.use(cors({ origin: (origin, callback) => callback(null, !origin || allowedOrigins.has(origin)), methods: ["GET", "POST"], allowedHeaders: ["Content-Type"], exposedHeaders: ["X-Generated-File-Count", "X-Workflow-Stages", "X-Workflow-QA-Passed", "X-Workflow-QA-Warning-Count"] }));
 app.use(express.json({ limit: "32kb" }));
 app.use("/api", rateLimit({ windowMs: 60 * 1000, limit: 10, standardHeaders: "draft-7", legacyHeaders: false }));
 
