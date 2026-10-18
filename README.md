@@ -71,3 +71,17 @@ The downloaded ZIP includes generated source files and a `GENERATION-NOTES.md`. 
 - Never commit provider keys, passwords, or database connection strings.
 - Treat generated code as untrusted until reviewed and tested.
 - Do not run generated code directly inside the API process.
+
+## DreamOps project workflow prototype
+
+The homepage now includes a **Team workspace** entry for a front-end workflow prototype with five role views:
+
+- **Client:** submit a project brief and requirements.
+- **Manager:** review a brief, propose an INR estimate, then assign tasks after CEO approval.
+- **CEO:** set and approve the final price; the prototype blocks task assignment until approval.
+- **HR:** review an example team roster and workflow checklist.
+- **Team:** update task status; progress is reflected in the project tracker.
+
+The workspace demonstrates the intended hand-off: client request → manager estimate → CEO final price approval → task assignment → team progress updates → delivery.
+
+**Important:** This is currently a front-end demo. Sample data and edits are held in React state and reset on refresh. Role switching is not authentication or authorization, and the HR roster is sample data. Before using this with real clients, implement secure login and server-enforced role permissions, persistent PostgreSQL tables for users/projects/quotes/tasks/audit events, API validation, and notification/follow-up handling. Do not use the demo for real pricing commitments or confidential client data.
