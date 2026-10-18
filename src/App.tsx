@@ -29,14 +29,15 @@ function App() {
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [workflowComplete, setWorkflowComplete] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState("New website");
   const [activity, setActivity] = useState<string[]>(["Workspace ready. Describe a website to start.", "Connected to the configured project API when a build is requested."]);
   const apiBase = (import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? "https://buildyourdream-api.onrender.com" : "http://localhost:8787")).replace(/\/$/, "");
   const agentStates = useMemo(() => {
-    const states: Record<string, AgentState> = { planner: plan ? "Complete" : "Ready", designer: plan ? "Waiting" : "Ready", developer: plan ? "Waiting" : "Ready", qa: plan ? "Waiting" : "Ready", release: generating ? "Working" : "Waiting" };
+    const states: Record<string, AgentState> = { planner: plan ? "Complete" : "Ready", designer: workflowComplete ? "Complete" : plan ? "Waiting" : "Ready", developer: workflowComplete ? "Complete" : plan ? "Waiting" : "Ready", qa: workflowComplete ? "Complete" : plan ? "Waiting" : "Ready", release: workflowComplete ? "Complete" : plan ? "Waiting" : "Ready" };
     return states;
-  }, [plan, generating]);
+  }, [plan, workflowComplete]);
 
   function log(message: string) {
     setActivity(current => [message, ...current].slice(0, 7));
@@ -46,7 +47,7 @@ function App() {
     const cleaned = value.trim();
     if (!cleaned) { setNotice("Add a short description of your website first."); return; }
     setPrompt(cleaned); setSelectedProject(cleaned.length > 34 ? cleaned.slice(0, 34).trim() + "…" : cleaned);
-    setNotice(""); setPlan(null); setBusy(true); setView("studio");
+    setNotice(""); setPlan(null); setWorkflowComplete(false); setBusy(true); setView("studio");
     log("Planner received a new brief.");
     try {
       const response = await fetch(`${apiBase}/api/plan`, {
@@ -71,7 +72,7 @@ function App() {
 
   async function generateProject() {
     if (!plan || !prompt.trim()) return;
-    setNotice(""); setGenerating(true); setView("agents"); log("Project generation requested from backend.");
+    setNotice(""); setGenerating(true); setWorkflowComplete(false); setView("agents"); log("Backend workflow started: source generation, static QA checks, and ZIP packaging.");
     try {
       const response = await fetch(`${apiBase}/api/generate-project`, {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt }),
@@ -86,8 +87,11 @@ function App() {
       const link = document.createElement("a"); link.href = url; link.download = "buildyourdream-full-stack-project.zip";
       document.body.appendChild(link); link.click(); link.remove(); window.setTimeout(() => URL.revokeObjectURL(url), 1500);
       const count = response.headers.get("X-Generated-File-Count");
+      const warningCount = Number(response.headers.get("X-Workflow-QA-Warning-Count") || 0);
+      setWorkflowComplete(true);
       setNotice(`Project ZIP downloaded${count ? ` with ${count} source files` : ""}. Review and test the code before publishing.`);
-      log("Backend returned a project ZIP for download.");
+      log("Planner, design brief, code generation, required QA checks, and ZIP release completed on the backend.");
+      if (warningCount) log("QA scan found " + warningCount + " warning(s); see GENERATION-NOTES.md in the ZIP.");
     } catch {
       setNotice("Could not reach the backend or download the project. Please try again.");
       log("Project generation request could not be completed.");
