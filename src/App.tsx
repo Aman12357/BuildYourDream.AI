@@ -30,6 +30,8 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [workflowComplete, setWorkflowComplete] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState("");
+  const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState("New website");
   const [activity, setActivity] = useState<string[]>(["Workspace ready. Describe a website to start.", "Connected to the configured project API when a build is requested."]);
@@ -47,7 +49,7 @@ function App() {
     const cleaned = value.trim();
     if (!cleaned) { setNotice("Add a short description of your website first."); return; }
     setPrompt(cleaned); setSelectedProject(cleaned.length > 34 ? cleaned.slice(0, 34).trim() + "…" : cleaned);
-    setNotice(""); setPlan(null); setWorkflowComplete(false); setBusy(true); setView("studio");
+    setNotice(""); setPlan(null); setPreviewHtml(""); setWorkflowComplete(false); setBusy(true); setView("studio");
     log("Planner received a new brief.");
     try {
       const response = await fetch(`${apiBase}/api/plan`, {
@@ -72,29 +74,28 @@ function App() {
 
   async function generateProject() {
     if (!plan || !prompt.trim()) return;
-    setNotice(""); setGenerating(true); setWorkflowComplete(false); setView("agents"); log("Backend workflow started: source generation, static QA checks, and ZIP packaging.");
+    setNotice(""); setGenerating(true); setWorkflowComplete(false); setPreviewHtml(""); setView("studio");
+    log("Generating website source and requesting an isolated HTML preview from the backend.");
     try {
-      const response = await fetch(`${apiBase}/api/generate-project`, {
+      const response = await fetch(`${apiBase}/api/preview-project`, {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt }),
       });
+      const result = await response.json().catch(() => ({}));
       if (!response.ok) {
-        const result = await response.json().catch(() => ({}));
-        const message = result.error || "Project generation failed.";
-        setNotice(message); log("Generation failed: " + message); return;
+        const message = result.error || "Website preview generation failed.";
+        setNotice(message); log("Preview generation failed: " + message); return;
       }
-      const file = await response.blob();
-      const url = URL.createObjectURL(file);
-      const link = document.createElement("a"); link.href = url; link.download = "buildyourdream-full-stack-project.zip";
-      document.body.appendChild(link); link.click(); link.remove(); window.setTimeout(() => URL.revokeObjectURL(url), 1500);
-      const count = response.headers.get("X-Generated-File-Count");
-      const warningCount = Number(response.headers.get("X-Workflow-QA-Warning-Count") || 0);
+      if (typeof result.previewHtml !== "string" || !result.previewHtml.trim()) {
+        setNotice("The AI response did not contain a usable website preview. Try a more specific prompt.");
+        log("Preview endpoint returned no HTML."); return;
+      }
+      setPreviewHtml(result.previewHtml);
       setWorkflowComplete(true);
-      setNotice(`Project ZIP downloaded${count ? ` with ${count} source files` : ""}. Review and test the code before publishing.`);
-      log("Planner, design brief, code generation, required QA checks, and ZIP release completed on the backend.");
-      if (warningCount) log("QA scan found " + warningCount + " warning(s); see GENERATION-NOTES.md in the ZIP.");
+      setNotice("Your generated website preview is ready. Try the desktop and mobile views.");
+      log("Live HTML preview received from the backend. No download was started.");
     } catch {
-      setNotice("Could not reach the backend or download the project. Please try again.");
-      log("Project generation request could not be completed.");
+      setNotice("Could not reach the backend to generate the preview. Please try again.");
+      log("Preview request could not be completed.");
     } finally { setGenerating(false); }
   }
 
@@ -123,11 +124,11 @@ function App() {
       <header className="hybrid-topbar">
         <button className="sidebar-toggle" aria-label="Toggle sidebar" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X size={19}/> : <Menu size={19}/>}</button>
         <div className="breadcrumb"><span>Workspace</span><ArrowRight size={13}/><strong>{navItems.find(n => n.id === view)?.label}</strong></div>
-        <div className="topbar-right"><span className="prototype-chip"><span/> Frontend prototype</span><button className="help-button" onClick={() => { setNotice("This prototype calls the existing /api/plan and /api/generate-project endpoints. Agent cards are workflow visibility, not separate autonomous services."); setView("studio"); }}>How it works</button><span className="top-avatar">A</span></div>
+        <div className="topbar-right"><span className="prototype-chip"><span/> Frontend prototype</span><button className="help-button" onClick={() => { setNotice("This prototype calls /api/plan and /api/preview-project. The generated HTML is displayed in a sandboxed iframe; agent cards are workflow visibility, not separate autonomous services."); setView("studio"); }}>How it works</button><span className="top-avatar">A</span></div>
       </header>
 
       {view === "studio" && <div className="hybrid-content">
-        <div className="view-heading"><div><div className="eyebrow"><Sparkles size={14}/> WEBSITE STUDIO</div><h1>From brief to <em>build.</em></h1><p>Describe the outcome. Review the plan. Keep the build process visible.</p></div><div className="heading-actions"><span className="autosave-label"><span/> Local draft</span><button className="outline-action" onClick={() => { setPrompt(""); setPlan(null); setNotice(""); setSelectedProject("New website"); log("Started a fresh draft."); }}><Plus size={15}/> New brief</button></div></div>
+        <div className="view-heading"><div><div className="eyebrow"><Sparkles size={14}/> WEBSITE STUDIO</div><h1>From brief to <em>build.</em></h1><p>Describe the outcome. Review the plan. Keep the build process visible.</p></div><div className="heading-actions"><span className="autosave-label"><span/> Local draft</span><button className="outline-action" onClick={() => { setPrompt(""); setPlan(null); setPreviewHtml(""); setNotice(""); setSelectedProject("New website"); log("Started a fresh draft."); }}><Plus size={15}/> New brief</button></div></div>
         <div className="studio-grid">
           <section className="panel brief-panel">
             <div className="panel-heading"><div className="panel-icon"><MessageSquareText size={17}/></div><div><h2>Your website brief</h2><p>Tell the planner what to make</p></div><span className="step-tag">STEP 01</span></div>
@@ -141,16 +142,16 @@ function App() {
           </section>
 
           <section className="panel preview-panel">
-            <div className="panel-heading preview-heading"><div className="panel-icon preview-icon"><Eye size={17}/></div><div><h2>Website preview</h2><p>{plan ? "Plan received · preview placeholder" : "Your canvas starts here"}</p></div><span className="preview-device"><Monitor size={14}/> Desktop</span></div>
+            <div className="panel-heading preview-heading"><div className="panel-icon preview-icon"><Eye size={17}/></div><div><h2>Website preview</h2><p>{previewHtml ? "Generated website · interactive preview" : plan ? "Plan received · ready to generate" : "Your canvas starts here"}</p></div><div className="preview-device-switch"><button className={previewMode === "desktop" ? "selected" : ""} onClick={() => setPreviewMode("desktop")} aria-label="Desktop preview"><Monitor size={14}/></button><button className={previewMode === "mobile" ? "selected" : ""} onClick={() => setPreviewMode("mobile")} aria-label="Mobile preview"><Smartphone size={14}/></button></div></div>
             <div className="browser-frame">
               <div className="browser-toolbar"><div className="browser-dots"><i/><i/><i/></div><div className="browser-address"><ShieldCheck size={11}/> your-project.preview</div><span className="browser-menu">•••</span></div>
-              {plan ? <div className="preview-generated"><div className="preview-site-nav"><span>{selectedProject.replace(/…$/, "") || "Your Brand"}</span><div><i/><i/><i/></div><b>Get started ↗</b></div><div className="preview-site-hero"><span className="preview-overline">A FIRST DRAFT STARTS HERE</span><strong>{plan.summary.length > 95 ? plan.summary.slice(0, 95) + "…" : plan.summary}</strong><p>This is a plan-based placeholder, not a rendered website yet.</p><div className="preview-skeleton-button">Explore the concept <ArrowRight size={12}/></div><div className="preview-skeleton-grid"><i/><i/><i/></div></div></div> : <div className="empty-canvas"><div className="canvas-orbit orbit-one"/><div className="canvas-orbit orbit-two"/><div className="canvas-center"><Monitor size={26}/></div><span className="canvas-spark spark-one">✳</span><span className="canvas-spark spark-two">✦</span><h3>Your canvas is waiting</h3><p>Submit a brief to get a plan from the connected backend. A real visual preview will need a renderer for generated files.</p><button onClick={() => document.getElementById("website-prompt")?.focus()}>Write your first brief <ArrowDownRight size={15}/></button></div>}
+              {previewHtml ? <iframe title="Generated website preview" sandbox="allow-scripts allow-forms" srcDoc={previewHtml} className={previewMode === "mobile" ? "live-preview-frame mobile-preview-frame" : "live-preview-frame"} /> : plan ? <div className="preview-generated"><div className="preview-site-nav"><span>{selectedProject.replace(/…$/, "") || "Your Brand"}</span><div><i/><i/><i/></div><b>Get started ↗</b></div><div className="preview-site-hero"><span className="preview-overline">A FIRST DRAFT STARTS HERE</span><strong>{plan.summary.length > 95 ? plan.summary.slice(0, 95) + "…" : plan.summary}</strong><p>This is a plan-based placeholder, not a rendered website yet.</p><div className="preview-skeleton-button">Explore the concept <ArrowRight size={12}/></div><div className="preview-skeleton-grid"><i/><i/><i/></div></div></div> : <div className="empty-canvas"><div className="canvas-orbit orbit-one"/><div className="canvas-orbit orbit-two"/><div className="canvas-center"><Monitor size={26}/></div><span className="canvas-spark spark-one">✳</span><span className="canvas-spark spark-two">✦</span><h3>Your canvas is waiting</h3><p>Submit a brief to get a plan from the connected backend. A real visual preview will need a renderer for generated files.</p><button onClick={() => document.getElementById("website-prompt")?.focus()}>Write your first brief <ArrowDownRight size={15}/></button></div>}
             </div>
             <div className="preview-footer"><span><span className={plan ? "status-led led-green" : "status-led"}/>{plan ? "Plan available" : "No preview generated"}</span><button disabled={!plan} onClick={() => setView("agents")}>View agent activity <ArrowRight size={14}/></button></div>
-            <div className="deliverable-strip"><div><FileCode2 size={17}/><span><strong>Source files</strong><small>Included in generated ZIP</small></span></div><div><Terminal size={17}/><span><strong>Setup guide</strong><small>README & env example</small></span></div></div>
+            <div className="deliverable-strip"><div><FileCode2 size={17}/><span><strong>Website preview</strong><small>Export can be added later</small></span></div><div><Terminal size={17}/><span><strong>Setup guide</strong><small>README & env example</small></span></div></div>
           </section>
         </div>
-        {plan && <section className="panel plan-result"><div className="panel-heading"><div className="panel-icon"><GitBranch size={17}/></div><div><h2>Build plan</h2><p>Returned by the planning API</p></div><span className="completed-tag"><CircleCheck size={14}/> Ready to review</span></div><p className="plan-result-summary">{plan.summary}</p><div className="plan-result-steps">{plan.steps.map((step, index) => <div key={step}><span>{String(index + 1).padStart(2, "0")}</span><p>{step}</p><Check size={15}/></div>)}</div><div className="plan-result-footer"><span><Clock3 size={14}/> Review the plan before generation</span><button className="primary-action" onClick={generateProject} disabled={generating}>{generating ? <><RefreshCw size={15} className="spin"/> Generating ZIP…</> : <><Play size={15}/> Generate full-stack project <ArrowRight size={15}/></>}</button></div></section>}
+        {plan && <section className="panel plan-result"><div className="panel-heading"><div className="panel-icon"><GitBranch size={17}/></div><div><h2>Build plan</h2><p>Returned by the planning API</p></div><span className="completed-tag"><CircleCheck size={14}/> Ready to review</span></div><p className="plan-result-summary">{plan.summary}</p><div className="plan-result-steps">{plan.steps.map((step, index) => <div key={step}><span>{String(index + 1).padStart(2, "0")}</span><p>{step}</p><Check size={15}/></div>)}</div><div className="plan-result-footer"><span><Clock3 size={14}/> Review the plan before generation</span><button className="primary-action" onClick={generateProject} disabled={generating}>{generating ? <><RefreshCw size={15} className="spin"/> Generating preview…</> : <><Play size={15}/> Generate full-stack project <ArrowRight size={15}/></>}</button></div></section>}
         <div className="bottom-note"><Command size={14}/> Tip: use the Agent Command tab to inspect what the current backend has actually completed.</div>
       </div>}
 
@@ -168,7 +169,7 @@ function App() {
             <div className="activity-footer"><span><span className="status-led led-green"/> Latest browser events</span><span>Newest first</span></div>
           </section>
         </div>
-        {plan && <section className="panel command-plan"><div className="panel-heading"><div className="panel-icon"><Check size={17}/></div><div><h2>Planner output</h2><p>Verified response received from /api/plan</p></div><span className="completed-tag"><CircleCheck size={14}/> Actual API result</span></div><p>{plan.summary}</p><ol>{plan.steps.map((step,i)=><li key={step}><span>{i+1}</span>{step}</li>)}</ol><button className="primary-action" onClick={generateProject} disabled={generating}>{generating?"Generating…":"Generate project ZIP"} <ArrowRight size={15}/></button></section>}
+        {plan && <section className="panel command-plan"><div className="panel-heading"><div className="panel-icon"><Check size={17}/></div><div><h2>Planner output</h2><p>Verified response received from /api/plan</p></div><span className="completed-tag"><CircleCheck size={14}/> Actual API result</span></div><p>{plan.summary}</p><ol>{plan.steps.map((step,i)=><li key={step}><span>{i+1}</span>{step}</li>)}</ol><button className="primary-action" onClick={generateProject} disabled={generating}>{generating?"Generating…":"Generate website preview"} <ArrowRight size={15}/></button></section>}
       </div>}
 
       {view === "projects" && <div className="hybrid-content">
