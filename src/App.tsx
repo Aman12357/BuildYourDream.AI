@@ -3,7 +3,7 @@ import {
   Activity, ArrowDownRight, ArrowRight, Bot, Check, ChevronDown, CircleAlert,
   CircleCheck, Clock3, Code2, Command, Download, Eye, FileCode2, FolderKanban,
   GitBranch, Layers3, LayoutDashboard, Menu, MessageSquareText, Monitor,
-  Play, Plus, RefreshCw, ShieldCheck, Sparkles, Terminal, WandSparkles, X
+  Play, Plus, RefreshCw, ShieldCheck, Smartphone, Sparkles, Terminal, WandSparkles, X
 } from "lucide-react";
 
 type BuildPlan = { summary: string; steps: string[] };
@@ -60,7 +60,7 @@ function App() {
         const message = result.error || "The planning API could not prepare a plan.";
         setNotice(message); log("Planner request failed: " + message);
       } else if (result.plan && Array.isArray(result.plan.steps)) {
-        setPlan(result.plan as BuildPlan); setNotice("Plan returned by the backend. Review it before generating the project.");
+        setPlan(result.plan as BuildPlan); setNotice("Plan returned by the backend. Generate a preview to see your website.");
         log("Planning API returned " + result.plan.steps.length + " steps.");
         log("Plan ready for your review.");
       } else {
