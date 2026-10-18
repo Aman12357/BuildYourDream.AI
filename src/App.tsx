@@ -2,18 +2,51 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity, ArrowDownRight, ArrowRight, Bot, Check, ChevronDown, CircleAlert,
   CircleCheck, Clock3, Code2, Command, Download, Eye, FileCode2, FolderKanban,
-  GitBranch, Layers3, LayoutDashboard, Menu, MessageSquareText, Maximize2, Minimize2, Monitor,
+  GitBranch, Layers3, LayoutDashboard, LayoutTemplate, Menu, MessageSquareText, Maximize2, Minimize2, Monitor, Search,
   Play, Plus, RefreshCw, ShieldCheck, Smartphone, Sparkles, Terminal, WandSparkles, X
 } from "lucide-react";
 
 type BuildPlan = { summary: string; steps: string[] };
-type View = "studio" | "agents" | "projects";
+type View = "studio" | "templates" | "agents" | "projects";
 type AgentState = "Ready" | "Waiting" | "Complete" | "Working";
 const examples = [
   { title: "Independent designer portfolio", category: "Portfolio", prompt: "Build a polished portfolio for an independent product designer. Include a bold editorial hero, selected projects, about section, testimonials, and a contact form. Use responsive layouts and accessible components." },
   { title: "A warm home-goods store", category: "E-commerce", prompt: "Create a modern e-commerce storefront for handmade home goods with product cards, category filters, product details, cart flow, brand story, and responsive mobile navigation." },
   { title: "SaaS launch website", category: "Startup", prompt: "Build a conversion-focused SaaS landing page with clear positioning, features, pricing, testimonials, FAQ, and a waitlist form. Use a clean visual system and mobile-first responsive design." },
 ];
+
+type WebsiteTemplate = { id: string; title: string; category: string; layout: string; style: string; prompt: string; categoryIndex: number; styleIndex: number };
+const templateCategories = [
+  "Business & Corporate", "Portfolio & Resume", "E-commerce & Retail", "SaaS & Technology", "Restaurant & Food",
+  "Real Estate", "Education & Courses", "Health & Wellness", "Beauty & Salon", "Travel & Hospitality",
+  "Finance & Consulting", "Agency & Creative", "Blog & Magazine", "Events & Weddings", "Nonprofit & Charity",
+  "Fitness & Sports", "Entertainment & Media", "Legal Services", "Construction & Architecture", "Automotive",
+  "Pets & Veterinary", "Photography", "Landing Pages", "Community & Membership", "Personal Brand",
+];
+const templateLayouts = [
+  "Editorial hero", "Split-screen landing", "Minimal grid", "Bold typography", "Product showcase",
+  "Story-led scroll", "Dashboard-inspired", "Gallery-first", "Conversion-focused", "Classic multi-page",
+];
+const templateStyles = [
+  "Modern minimal", "Warm organic", "Premium dark", "Playful colorful", "Editorial luxury",
+  "Clean corporate", "Neo-brutalist", "Soft gradient",
+];
+const templateCatalog: WebsiteTemplate[] = templateCategories.flatMap((category, categoryIndex) =>
+  templateLayouts.flatMap((layout, layoutIndex) =>
+    templateStyles.map((style, styleIndex) => {
+      const categorySlug = category.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      const title = category.split(" & ")[0] + " " + layout.toLowerCase() + " " + (styleIndex + 1);
+      return {
+        id: categorySlug + "-" + (layoutIndex + 1) + "-" + (styleIndex + 1),
+        title, category, layout, style, categoryIndex, styleIndex,
+        prompt: "Create a complete, responsive website using this selected template direction. Category: " + category +
+          ". Layout: " + layout + ". Visual style: " + style +
+          ". Include realistic sample content, a clear navigation, a polished hero, category-appropriate sections, strong typography, accessible contrast, responsive mobile layout, and working visible interactions where appropriate. Avoid placeholder lorem ipsum and fake metrics. Make the result visually distinct and ready for customization."
+      };
+    })
+  )
+);
+
 const agents = [
   { id: "planner", name: "Planner", role: "Scope & architecture", icon: GitBranch, color: "mint" },
   { id: "designer", name: "Designer", role: "UX & design system", icon: Layers3, color: "amber" },
@@ -24,6 +57,9 @@ const agents = [
 
 function App() {
   const [view, setView] = useState<View>("studio");
+  const [templateSearch, setTemplateSearch] = useState("");
+  const [templateCategory, setTemplateCategory] = useState("All templates");
+  const [templatePage, setTemplatePage] = useState(1);
   const [prompt, setPrompt] = useState("");
   const [plan, setPlan] = useState<BuildPlan | null>(null);
   const [notice, setNotice] = useState("");
@@ -123,6 +159,7 @@ function App() {
 
   const navItems: { id: View; label: string; icon: typeof LayoutDashboard }[] = [
     { id: "studio", label: "Website studio", icon: Monitor },
+    { id: "templates", label: "Template library", icon: LayoutTemplate },
     { id: "agents", label: "Agent command", icon: Activity },
     { id: "projects", label: "Projects", icon: FolderKanban },
   ];
@@ -175,6 +212,39 @@ function App() {
         </div>
         {plan && <section className="panel plan-result"><div className="panel-heading"><div className="panel-icon"><GitBranch size={17}/></div><div><h2>Build plan</h2><p>Returned by the planning API</p></div><span className="completed-tag"><CircleCheck size={14}/> Ready to review</span></div><p className="plan-result-summary">{plan.summary}</p><div className="plan-result-steps">{plan.steps.map((step, index) => <div key={step}><span>{String(index + 1).padStart(2, "0")}</span><p>{step}</p><Check size={15}/></div>)}</div><div className="plan-result-footer"><span><Clock3 size={14}/> Review the plan before generation</span><button className="primary-action" onClick={generateProject} disabled={generating}>{generating ? <><RefreshCw size={15} className="spin"/> Generating preview…</> : <><Play size={15}/> Generate full-stack project <ArrowRight size={15}/></>}</button></div></section>}
         <div className="bottom-note"><Command size={14}/> Tip: use the Agent Command tab to inspect what the current backend has actually completed.</div>
+      </div>}
+
+      {view === "templates" && <div className="hybrid-content template-library-content">
+        <div className="view-heading"><div><div className="eyebrow"><LayoutTemplate size={14}/> TEMPLATE LIBRARY</div><h1>Start with a <em>layout.</em></h1><p>Browse 2,000 template combinations across 25 categories, 10 layout patterns, and 8 visual styles. Choose one, then customize the brief before generating.</p></div><div className="template-total"><strong>{templateCatalog.length.toLocaleString()}</strong><span>template combinations</span></div></div>
+        <section className="panel template-browser">
+          <div className="template-search-row">
+            <label className="template-search"><Search size={17}/><input value={templateSearch} onChange={e => { setTemplateSearch(e.target.value); setTemplatePage(1); }} placeholder="Search templates, categories, layouts or styles…" aria-label="Search templates"/></label>
+            <span className="template-results-count">{templateCatalog.filter(t => (templateCategory === "All templates" || t.category === templateCategory) && (t.title + " " + t.category + " " + t.layout + " " + t.style).toLowerCase().includes(templateSearch.toLowerCase())).length.toLocaleString()} results</span>
+          </div>
+          <div className="template-category-row" aria-label="Filter templates by category">
+            <button className={templateCategory === "All templates" ? "template-category active" : "template-category"} onClick={() => { setTemplateCategory("All templates"); setTemplatePage(1); }}>All templates <span>{templateCatalog.length.toLocaleString()}</span></button>
+            {templateCategories.map(category => <button key={category} className={templateCategory === category ? "template-category active" : "template-category"} onClick={() => { setTemplateCategory(category); setTemplatePage(1); }}>{category}<span>80</span></button>)}
+          </div>
+          {(() => {
+            const filtered = templateCatalog.filter(t => (templateCategory === "All templates" || t.category === templateCategory) && (t.title + " " + t.category + " " + t.layout + " " + t.style).toLowerCase().includes(templateSearch.toLowerCase()));
+            const pageCount = Math.max(1, Math.ceil(filtered.length / 24));
+            const currentPage = Math.min(templatePage, pageCount);
+            return <>
+              <div className="template-grid">
+                {filtered.slice((currentPage - 1) * 24, currentPage * 24).map(template => <article className="template-card" key={template.id}>
+                  <div className={"template-art art-style-" + template.styleIndex} aria-hidden="true">
+                    <div className="template-art-nav"><i/><i/><i/><b/></div>
+                    <div className="template-art-hero"><span/><strong/><strong/><small/></div>
+                    <div className="template-art-content"><i/><i/><i/></div>
+                  </div>
+                  <div className="template-card-body"><span className="template-card-category">{template.category}</span><h3>{template.title}</h3><p>{template.layout} · {template.style}</p><button className="template-use-button" onClick={() => { setPrompt(template.prompt); setSelectedProject(template.title); setNotice("Template brief loaded. Customize it, then generate your build plan."); setView("studio"); log("Selected template: " + template.title); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Use template <ArrowRight size={14}/></button></div>
+                </article>)}
+              </div>
+              {filtered.length === 0 && <div className="template-empty"><Search size={24}/><h3>No matching templates</h3><p>Try a different search or choose another category.</p><button className="outline-action" onClick={() => { setTemplateSearch(""); setTemplateCategory("All templates"); setTemplatePage(1); }}>Clear filters</button></div>}
+              {filtered.length > 0 && <div className="template-pagination"><span>Showing {(currentPage - 1) * 24 + 1}–{Math.min(currentPage * 24, filtered.length)} of {filtered.length.toLocaleString()}</span><div><button className="outline-action" disabled={currentPage === 1} onClick={() => setTemplatePage(currentPage - 1)}>Previous</button><span>Page {currentPage} of {pageCount}</span><button className="outline-action" disabled={currentPage >= pageCount} onClick={() => setTemplatePage(currentPage + 1)}>Next</button></div></div>}
+            </>;
+          })()}
+        </section>
       </div>}
 
       {view === "agents" && <div className="hybrid-content">
