@@ -4,6 +4,7 @@ import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import archiver from "archiver";
+import { runQualityChecks, createWorkflowNotes } from "./workflow.js";
 
 const app = express();
 app.set("trust proxy", 1);
@@ -159,14 +160,19 @@ app.post("/api/generate-project", async (req, res) => {
       throw new Error("The AI provider returned invalid JSON. Please try again.");
     }
     const files = validateFiles(parsed);
+    const plan = makePlan(prompt);
+    const quality = runQualityChecks(files);
     const projectName = safeProjectName(parsed.projectName);
+    res.setHeader("X-Workflow-Stages", "planner,designer,developer,qa,release");
+    res.setHeader("X-Workflow-QA-Passed", String(quality.passed));
+    res.setHeader("X-Workflow-QA-Warning-Count", String(quality.warnings.length));
     res.setHeader("Content-Type", "application/zip");
     res.setHeader("Content-Disposition", `attachment; filename="${projectName}.zip"`);
     res.setHeader("X-Generated-File-Count", String(files.length));
     const archive = archiver("zip", { zlib: { level: 6 } });
     archive.on("error", (error) => { console.error("Project ZIP error:", error); if (!res.headersSent) res.status(500).end(); else res.destroy(error); });
     archive.pipe(res);
-    archive.append(`# ${projectName}\n\n${parsed.summary || "Generated with BuildYourDream.AI"}\n\nAI provider: ${generated.provider} (${generated.model})\n\nGenerated source code must be reviewed and tested before production use.\n`, { name: `${projectName}/GENERATION-NOTES.md` });
+    archive.append(createWorkflowNotes(plan, quality, generated.provider, generated.model, parsed.summary), { name: `${projectName}/GENERATION-NOTES.md` });
     for (const file of files) archive.append(file.content, { name: `${projectName}/${file.path}` });
     await archive.finalize();
   } catch (error) {
