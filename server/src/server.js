@@ -50,18 +50,34 @@ async function askGemini(prompt) {
 
 async function askGroq(prompt) {
   if (!process.env.GROQ_API_KEY) throw new Error("Groq API key is not configured");
-  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: process.env.GROQ_MODEL || "openai/gpt-oss-120b", temperature: 0.2, response_format: { type: "json_object" }, messages: [
-      { role: "system", content: "You generate complete, secure, runnable full-stack website starter projects. Return only valid JSON." },
-      { role: "user", content: prompt },
-    ] }),
-    signal: AbortSignal.timeout(120000),
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(`Groq request failed (${response.status}): ${data.error?.message || "provider error"}`);
-  return data.choices?.[0]?.message?.content || "";
+  const configuredModel = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
+  const modelsToTry = [...new Set([configuredModel, "openai/gpt-oss-120b"])];
+  let lastError;
+  for (const model of modelsToTry) {
+    try {
+      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ model, temperature: 0.2, response_format: { type: "json_object" }, messages: [
+          { role: "system", content: "You generate complete, secure, runnable full-stack website starter projects. Return only valid JSON." },
+          { role: "user", content: prompt },
+        ] }),
+        signal: AbortSignal.timeout(120000),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const error = new Error(`Groq request failed (${response.status}): ${data.error?.message || "provider error"}`);
+        if (response.status === 404 && model !== modelsToTry[modelsToTry.length - 1]) { lastError = error; continue; }
+        throw error;
+      }
+      return data.choices?.[0]?.message?.content || "";
+    } catch (error) {
+      lastError = error;
+      if (model !== modelsToTry[modelsToTry.length - 1] && String(error.message || error).includes("(404)")) continue;
+      throw error;
+    }
+  }
+  throw lastError || new Error("Groq generation failed");
 }
 
 async function generateProject(prompt) {
@@ -114,7 +130,8 @@ function validateFiles(payload) {
 
 app.disable("x-powered-by");
 app.use(helmet());
-app.use(cors({ origin: clientOrigin.split(",").map((value) => value.trim()), methods: ["GET", "POST"], allowedHeaders: ["Content-Type"] }));
+const allowedOrigins = new Set([...clientOrigin.split(",").map((value) => value.trim()), "https://buildyourdream-ai.onrender.com", "http://localhost:5173", "http://127.0.0.1:5173"]);
+app.use(cors({ origin: (origin, callback) => callback(null, !origin || allowedOrigins.has(origin)), methods: ["GET", "POST"], allowedHeaders: ["Content-Type"] }));
 app.use(express.json({ limit: "32kb" }));
 app.use("/api", rateLimit({ windowMs: 60 * 1000, limit: 10, standardHeaders: "draft-7", legacyHeaders: false }));
 
