@@ -29,7 +29,7 @@ function App() {
     setNotice("");
     setPlan(null);
     setIsCheckingApi(true);
-    const apiBase = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8787").replace(/\/$/, "");
+    const apiBase = (import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? "https://buildyourdream-api.onrender.com" : "http://localhost:8787")).replace(/\/$/, "");
     try {
       const response = await fetch(`${apiBase}/api/plan`, {
         method: "POST",
@@ -53,7 +53,7 @@ function App() {
     if (!plan || !prompt.trim()) return;
     setNotice("");
     setIsGeneratingProject(true);
-    const apiBase = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8787").replace(/\/$/, "");
+    const apiBase = (import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? "https://buildyourdream-api.onrender.com" : "http://localhost:8787")).replace(/\/$/, "");
     try {
       const response = await fetch(`${apiBase}/api/generate-project`, {
         method: "POST",
