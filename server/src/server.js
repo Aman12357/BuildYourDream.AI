@@ -86,6 +86,7 @@ async function generateProject(prompt) {
 Return ONLY JSON shaped exactly as {"projectName":"short-kebab-case","summary":"one short sentence","files":[{"path":"relative/path","content":"complete file text"}]}.
 Generate between 7 and 16 useful files, including:
 - frontend/index.html and frontend/src/main.tsx or main.jsx, frontend/src/App.tsx or App.jsx, frontend/src/styles.css
+- frontend/preview.html: a complete self-contained HTML page with inline CSS and JavaScript, suitable for direct rendering in a sandboxed browser preview without a build step
 - server/package.json and server/src/server.js (Node.js + Express REST API)
 - database/schema.sql with PostgreSQL tables, foreign keys, constraints, and indexes appropriate to the idea
 - .env.example with placeholders only (never secrets)
