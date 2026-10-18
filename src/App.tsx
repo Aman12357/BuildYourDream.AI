@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity, ArrowDownRight, ArrowRight, Bot, Check, ChevronDown, CircleAlert,
   CircleCheck, Clock3, Code2, Command, Download, Eye, FileCode2, FolderKanban,
-  GitBranch, Layers3, LayoutDashboard, Menu, MessageSquareText, Monitor,
+  GitBranch, Layers3, LayoutDashboard, Menu, MessageSquareText, Maximize2, Minimize2, Monitor,
   Play, Plus, RefreshCw, ShieldCheck, Smartphone, Sparkles, Terminal, WandSparkles, X
 } from "lucide-react";
 
@@ -32,6 +32,28 @@ function App() {
   const [workflowComplete, setWorkflowComplete] = useState(false);
   const [previewHtml, setPreviewHtml] = useState("");
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
+  const [isPreviewFullscreen, setIsPreviewFullscreen] = useState(false);
+  const previewFrameRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const syncFullscreenState = () => setIsPreviewFullscreen(document.fullscreenElement === previewFrameRef.current);
+    document.addEventListener("fullscreenchange", syncFullscreenState);
+    return () => document.removeEventListener("fullscreenchange", syncFullscreenState);
+  }, []);
+
+  async function togglePreviewFullscreen() {
+    try {
+      if (document.fullscreenElement === previewFrameRef.current) {
+        await document.exitFullscreen();
+      } else if (previewFrameRef.current?.requestFullscreen) {
+        await previewFrameRef.current.requestFullscreen();
+      } else {
+        setNotice("Fullscreen mode is not supported by this browser.");
+      }
+    } catch {
+      setNotice("Could not open fullscreen mode. Use your browser controls or press Esc to exit.");
+    }
+  }
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState("New website");
   const [activity, setActivity] = useState<string[]>(["Workspace ready. Describe a website to start.", "Connected to the configured project API when a build is requested."]);
@@ -142,8 +164,8 @@ function App() {
           </section>
 
           <section className="panel preview-panel">
-            <div className="panel-heading preview-heading"><div className="panel-icon preview-icon"><Eye size={17}/></div><div><h2>Website preview</h2><p>{previewHtml ? "Generated website · interactive preview" : plan ? "Plan received · ready to generate" : "Your canvas starts here"}</p></div><div className="preview-device-switch"><button className={previewMode === "desktop" ? "selected" : ""} onClick={() => setPreviewMode("desktop")} aria-label="Desktop preview"><Monitor size={14}/></button><button className={previewMode === "mobile" ? "selected" : ""} onClick={() => setPreviewMode("mobile")} aria-label="Mobile preview"><Smartphone size={14}/></button></div></div>
-            <div className="browser-frame">
+            <div className="panel-heading preview-heading"><div className="panel-icon preview-icon"><Eye size={17}/></div><div><h2>Website preview</h2><p>{previewHtml ? "Generated website · interactive preview" : plan ? "Plan received · ready to generate" : "Your canvas starts here"}</p></div><div className="preview-controls"><div className="preview-device-switch"><button className={previewMode === "desktop" ? "selected" : ""} onClick={() => setPreviewMode("desktop")} aria-label="Desktop preview" title="Desktop preview"><Monitor size={14}/></button><button className={previewMode === "mobile" ? "selected" : ""} onClick={() => setPreviewMode("mobile")} aria-label="Mobile preview" title="Mobile preview"><Smartphone size={14}/></button></div><button className="preview-fullscreen-button" onClick={togglePreviewFullscreen} aria-label={isPreviewFullscreen ? "Exit fullscreen preview" : "Open preview in fullscreen"} title={isPreviewFullscreen ? "Exit fullscreen (Esc)" : "Open preview in fullscreen"}>{isPreviewFullscreen ? <><Minimize2 size={14}/> Exit fullscreen</> : <><Maximize2 size={14}/> Full screen</>}</button></div></div>
+            <div className="browser-frame" ref={previewFrameRef}>
               <div className="browser-toolbar"><div className="browser-dots"><i/><i/><i/></div><div className="browser-address"><ShieldCheck size={11}/> your-project.preview</div><span className="browser-menu">•••</span></div>
               {previewHtml ? <iframe title="Generated website preview" sandbox="allow-scripts" srcDoc={previewHtml} className={previewMode === "mobile" ? "live-preview-frame mobile-preview-frame" : "live-preview-frame"} /> : plan ? <div className="preview-generated"><div className="preview-site-nav"><span>{selectedProject.replace(/…$/, "") || "Your Brand"}</span><div><i/><i/><i/></div><b>Get started ↗</b></div><div className="preview-site-hero"><span className="preview-overline">A FIRST DRAFT STARTS HERE</span><strong>{plan.summary.length > 95 ? plan.summary.slice(0, 95) + "…" : plan.summary}</strong><p>This is a plan-based placeholder, not a rendered website yet.</p><div className="preview-skeleton-button">Explore the concept <ArrowRight size={12}/></div><div className="preview-skeleton-grid"><i/><i/><i/></div></div></div> : <div className="empty-canvas"><div className="canvas-orbit orbit-one"/><div className="canvas-orbit orbit-two"/><div className="canvas-center"><Monitor size={26}/></div><span className="canvas-spark spark-one">✳</span><span className="canvas-spark spark-two">✦</span><h3>Your canvas is waiting</h3><p>Submit a brief to get a plan from the connected backend. A real visual preview will need a renderer for generated files.</p><button onClick={() => document.getElementById("website-prompt")?.focus()}>Write your first brief <ArrowDownRight size={15}/></button></div>}
             </div>
