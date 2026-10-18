@@ -10,7 +10,7 @@ export function runQualityChecks(files) {
   ];
   for (const file of files) {
     if (/\b(sk-[A-Za-z0-9]{20,}|AIza[0-9A-Za-z_-]{30,}|gsk_[A-Za-z0-9]{20,})\b/.test(file.content)) warnings.push("Potential hard-coded credential detected in " + file.path + "; replace it with an environment variable.");
-    if (/\beval\s*\\(|new Function\s*\\(/.test(file.content)) warnings.push("Dynamic code execution pattern found in " + file.path + "; review before running.");
+    if (/\beval\s*\(|new Function\s*\(/.test(file.content)) warnings.push("Dynamic code execution pattern found in " + file.path + "; review before running.");
   }
   return { checks, passed: checks.every((check) => check.passed), warnings };
 }
