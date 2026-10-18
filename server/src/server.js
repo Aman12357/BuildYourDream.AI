@@ -67,8 +67,10 @@ async function askGroq(prompt) {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        const error = new Error(`Groq request failed (${response.status}): ${data.error?.message || "provider error"}`);
-        if (response.status === 404 && model !== modelsToTry[modelsToTry.length - 1]) { lastError = error; continue; }
+        const message = data.error?.message || "provider error";
+        const error = new Error(`Groq request failed (${response.status}): ${message}`);
+        const modelUnavailable = /model.*(blocked|not found|not available|decommissioned|access)/i.test(message);
+        if ((response.status === 404 || (response.status === 403 && modelUnavailable)) && model !== modelsToTry[modelsToTry.length - 1]) { lastError = error; continue; }
         throw error;
       }
       return data.choices?.[0]?.message?.content || "";
@@ -106,10 +108,50 @@ Use a coherent stack: React + Vite for frontend, Node.js + Express for backend, 
   throw error;
 }
 
+function parsePreviewHtmlResponse(raw) {
+  const fence = String.fromCharCode(96).repeat(3);
+  const text = String(raw || "").trim().replace(new RegExp("^" + fence + "(?:json|html)?\\s*", "i"), "").replace(new RegExp("\\s*" + fence + "$"), "");
+  let inString = false;
+  let escaped = false;
+  let depth = 0;
+  let start = -1;
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === "\\") escaped = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') { inString = true; continue; }
+    if (ch === "{") { if (depth === 0) start = i; depth += 1; }
+    if (ch === "}") {
+      depth -= 1;
+      if (depth === 0 && start >= 0) {
+        try {
+          const parsed = JSON.parse(text.slice(start, i + 1));
+          if (typeof parsed.html === "string") return parsed.html;
+        } catch {}
+        start = -1;
+      }
+    }
+  }
+  const lower = text.toLowerCase();
+  const htmlStart = lower.indexOf("<!doctype html");
+  const htmlAltStart = lower.indexOf("<html");
+  const index = htmlStart >= 0 ? htmlStart : htmlAltStart;
+  if (index >= 0) {
+    const html = text.slice(index).trim();
+    const close = html.toLowerCase().lastIndexOf("</html>");
+    if (close >= 0) return html.slice(0, close + 7);
+  }
+  throw new Error("AI returned an invalid preview response; please retry.");
+}
+
 async function generatePreviewHtml(userPrompt) {
-  const prompt = `Create a polished, responsive website preview from this idea: ${JSON.stringify(userPrompt)}.
-Return ONLY valid JSON with exactly one property: {"html":"..."}.
-The html value must be a complete self-contained HTML document with inline CSS and JavaScript. Make it visually polished and specific to the user's idea, with responsive layout, accessible semantic HTML, working navigation/buttons/forms where appropriate, realistic sample content, and no external dependencies or build step. Use no API keys, no backend calls, and no claims that payments/authentication are connected. Keep the HTML concise enough for a quick preview (aim for under 12,000 characters). Escape the HTML correctly inside the JSON string.`;
+  const prompt = "Create a polished, responsive website preview from this idea: " + JSON.stringify(userPrompt) + ".
+Return ONLY one JSON object with one property: {\"html\":\"...\"}.
+The html value must be a complete self-contained HTML document with inline CSS and JavaScript. Make it visually polished and specific to the user's idea, with responsive layout, accessible semantic HTML, working navigation/buttons/forms where appropriate, realistic sample content, and no external dependencies or build step. Use no API keys, no backend calls, and no claims that payments/authentication are connected. Keep the HTML concise enough for a quick preview (aim for under 8,000 characters). Do not include a second JSON object or text after the JSON object.";
   const failures = [];
   for (const [provider, call] of [
     ["Gemini", () => askGemini(prompt)],
@@ -118,16 +160,14 @@ The html value must be a complete self-contained HTML document with inline CSS a
     const configured = provider === "Gemini" ? Boolean(process.env.GEMINI_API_KEY) : Boolean(process.env.GROQ_API_KEY);
     if (!configured) continue;
     try {
-      const raw = await call();
-      const cleaned = String(raw).trim().replace(/^\x60\x60\x60(?:json)?\s*/i, "").replace(/\s*\x60\x60\x60$/, "");
-      const parsed = JSON.parse(cleaned);
-      if (typeof parsed.html !== "string" || !parsed.html.toLowerCase().includes("<html")) {
-        throw new Error(`${provider} returned no complete HTML preview`);
+      const html = parsePreviewHtmlResponse(await call());
+      if (!html.toLowerCase().includes("<html") || !html.toLowerCase().includes("</html>")) {
+        throw new Error(provider + " returned no complete HTML preview");
       }
-      return { html: parsed.html, provider };
+      return { html, provider };
     } catch (error) {
-      failures.push(`${provider}: ${String(error.message || error)}`);
-      console.error(`${provider} preview generation failed:`, error.message || error);
+      failures.push(provider + ": " + String(error.message || error));
+      console.error(provider + " preview generation failed:", error.message || error);
     }
   }
   const error = new Error(failures.length ? failures.join(" | ") : "No AI provider is configured.");
