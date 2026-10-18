@@ -146,6 +146,26 @@ app.post("/api/plan", (req, res) => {
   return res.json({ plan: makePlan(prompt) });
 });
 
+
+app.post("/api/preview-project", async (req, res) => {
+  const prompt = typeof req.body?.prompt === "string" ? req.body.prompt.trim() : "";
+  if (!prompt) return res.status(400).json({ error: "Please describe the website you want to preview." });
+  if (prompt.length > 4000) return res.status(413).json({ error: "Please keep the description under 4,000 characters." });
+  try {
+    const generated = await generateProject(prompt);
+    const cleaned = generated.raw.trim().replace(/^\x60\x60\x60(?:json)?\s*/i, "").replace(/\s*\x60\x60\x60$/, "");
+    const parsed = JSON.parse(cleaned);
+    const files = validateFiles(parsed);
+    const preview = files.find((file) => file.path.toLowerCase() === "frontend/preview.html");
+    if (!preview) return res.status(422).json({ error: "The AI response did not include frontend/preview.html. Please try again." });
+    res.setHeader("Cache-Control", "no-store");
+    return res.json({ previewHtml: preview.content, projectName: safeProjectName(parsed.projectName), summary: parsed.summary || "" });
+  } catch (error) {
+    console.error("Website preview generation failed:", error.message || error);
+    return res.status(error.statusCode || 502).json({ error: error.message || "Website preview generation failed. Please try again." });
+  }
+});
+
 app.post("/api/generate-project", async (req, res) => {
   const prompt = typeof req.body?.prompt === "string" ? req.body.prompt.trim() : "";
   if (!prompt) return res.status(400).json({ error: "Please describe the website you want to build." });
