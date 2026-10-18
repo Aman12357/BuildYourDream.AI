@@ -19,7 +19,7 @@ export function createWorkflowNotes(plan, quality, provider, model, summary) {
   const checkLines = quality.checks.map((check) => "- [" + (check.passed ? "x" : " ") + "] " + check.label).join("\n");
   const warningLines = quality.warnings.length ? quality.warnings.map((warning) => "- " + warning).join("\n") : "- No obvious hard-coded provider-key pattern detected by the basic scan.";
   return "# BuildYourDream.AI workflow report\n\n## Planner\n" + plan.summary + "\n\n" + plan.steps.map((step, index) => (index + 1) + ". " + step).join("\n") +
-    "\n\n## Designer\nA design brief was derived from the prompt and passed to the code-generation model: responsive layout, accessible semantic UI, consistent styling, and clear primary actions. Review the generated UI before production.\n\n" +
+    "\n\n## Designer\nThe generation instructions include a design stage: derive a visual direction from the prompt, then apply responsive layout, accessible semantic UI, consistent spacing, typography, and clear primary actions. This is not a separate autonomous agent/API call. Review the generated UI before production.\n\n" +
     "## Developer\nThe configured AI provider generated the project source files. Provider output is untrusted code; inspect it before running.\n\n" +
     "## QA checks\n" + checkLines + "\n\n## QA warnings\n" + warningLines +
     "\n\n## Release\nThis ZIP is the packaged source artifact. It has not been deployed or run in a sandbox. Passing these checks does not prove the generated application compiles or is secure.\n\n" +
