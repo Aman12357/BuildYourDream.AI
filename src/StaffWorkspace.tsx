@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { ArrowLeft, ArrowRight, BadgeCheck, BriefcaseBusiness, Check, ChevronDown, CircleDollarSign, ClipboardList, Clock3, Crown, FileText, Users, UserRoundCog, UserRoundCheck, Plus, Send, ShieldCheck, Sparkles } from "lucide-react";
 
 type Role = "CEO" | "Manager" | "HR" | "Team" | "Client";
@@ -45,7 +45,7 @@ export default function StaffWorkspace({ onBack }: { onBack: () => void }) {
   function patchProject(id: number, patch: Partial<Project>) {
     setProjects(prev => prev.map(p => p.id === id ? { ...p, ...patch } : p));
   }
-  function createRequest(event: React.FormEvent) {
+  function createRequest(event: FormEvent) {
     event.preventDefault();
     if (!clientName.trim() || !projectTitle.trim() || !scope.trim()) return;
     const id = Math.max(1048, ...projects.map(p => p.id)) + 1;
