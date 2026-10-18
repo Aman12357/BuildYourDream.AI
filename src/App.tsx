@@ -2,8 +2,8 @@ import { useMemo, useState } from "react";
 import {
   Activity, ArrowDownRight, ArrowRight, Bot, Check, ChevronDown, CircleAlert,
   CircleCheck, Clock3, Code2, Command, Download, Eye, FileCode2, FolderKanban,
-  Gauge, GitBranch, Layers3, LayoutDashboard, Menu, MessageSquareText, Monitor,
-  Play, Plus, RefreshCw, Send, ShieldCheck, Sparkles, Terminal, WandSparkles, X
+  GitBranch, Layers3, LayoutDashboard, Menu, MessageSquareText, Monitor,
+  Play, Plus, RefreshCw, ShieldCheck, Sparkles, Terminal, WandSparkles, X
 } from "lucide-react";
 
 type BuildPlan = { summary: string; steps: string[] };
