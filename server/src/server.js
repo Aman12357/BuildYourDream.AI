@@ -149,11 +149,9 @@ function parsePreviewHtmlResponse(raw) {
 }
 
 async function generatePreviewHtml(userPrompt) {
-  const prompt = [
-    "Create a polished, responsive website preview from this idea: " + JSON.stringify(userPrompt) + ".",
-    "Return ONLY one JSON object with one property: {\\"html\\":\\"...\\"}.",
-    "The html value must be a complete self-contained HTML document with inline CSS and JavaScript. Make it visually polished and specific to the user idea, with responsive layout, accessible semantic HTML, working navigation/buttons/forms where appropriate, realistic sample content, and no external dependencies or build step. Use no API keys, no backend calls, and no claims that payments/authentication are connected. Keep the HTML concise enough for a quick preview (aim for under 8,000 characters). Do not include a second JSON object or text after the JSON object."
-  ].join("\\n");;
+  const prompt = `Create a polished, responsive website preview from this idea: ${JSON.stringify(userPrompt)}.
+Return ONLY one JSON object with one property: {"html":"..."}.
+The html value must be a complete self-contained HTML document with inline CSS and JavaScript. Make it visually polished and specific to the user's idea, with responsive layout, accessible semantic HTML, working navigation/buttons/forms where appropriate, realistic sample content, and no external dependencies or build step. Use no API keys, no backend calls, and no claims that payments/authentication are connected. Keep the HTML concise enough for a quick preview (aim for under 8,000 characters). Do not include a second JSON object or text after the JSON object.`;
   const failures = [];
   for (const [provider, call] of [
     ["Gemini", () => askGemini(prompt)],
