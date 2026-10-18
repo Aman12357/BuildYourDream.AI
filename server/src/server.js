@@ -162,6 +162,9 @@ app.post("/api/generate-project", async (req, res) => {
     const files = validateFiles(parsed);
     const plan = makePlan(prompt);
     const quality = runQualityChecks(files);
+    if (!quality.passed) {
+      return res.status(422).json({ error: "Quality checks did not pass. Refine the prompt and try again.", qa: quality });
+    }
     const projectName = safeProjectName(parsed.projectName);
     res.setHeader("X-Workflow-Stages", "planner,designer,developer,qa,release");
     res.setHeader("X-Workflow-QA-Passed", String(quality.passed));
