@@ -51,8 +51,10 @@ async function askGemini(prompt) {
 
 async function askGroq(prompt) {
   if (!process.env.GROQ_API_KEY) throw new Error("Groq API key is not configured");
-  const configuredModel = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
-  const modelsToTry = [...new Set([configuredModel, "openai/gpt-oss-120b"])];
+  // Try the configured model first, then supported alternatives if access is restricted.
+  // Keep this list aligned with the models enabled for your Groq organization.
+  const configuredModel = process.env.GROQ_MODEL || "qwen/qwen3.8-27b";
+  const modelsToTry = [...new Set([configuredModel, "qwen/qwen3.8-27b", "openai/gpt-oss-20b"])];
   let lastError;
   for (const model of modelsToTry) {
     try {
