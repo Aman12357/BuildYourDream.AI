@@ -106,6 +106,35 @@ Use a coherent stack: React + Vite for frontend, Node.js + Express for backend, 
   throw error;
 }
 
+async function generatePreviewHtml(userPrompt) {
+  const prompt = `Create a polished, responsive website preview from this idea: ${JSON.stringify(userPrompt)}.
+Return ONLY valid JSON with exactly one property: {"html":"..."}.
+The html value must be a complete self-contained HTML document with inline CSS and JavaScript. Make it visually polished and specific to the user's idea, with responsive layout, accessible semantic HTML, working navigation/buttons/forms where appropriate, realistic sample content, and no external dependencies or build step. Use no API keys, no backend calls, and no claims that payments/authentication are connected. Keep the HTML concise enough for a quick preview (aim for under 12,000 characters). Escape the HTML correctly inside the JSON string.`;
+  const failures = [];
+  for (const [provider, call] of [
+    ["Gemini", () => askGemini(prompt)],
+    ["Groq", () => askGroq(prompt)],
+  ]) {
+    const configured = provider === "Gemini" ? Boolean(process.env.GEMINI_API_KEY) : Boolean(process.env.GROQ_API_KEY);
+    if (!configured) continue;
+    try {
+      const raw = await call();
+      const cleaned = String(raw).trim().replace(/^\x60\x60\x60(?:json)?\s*/i, "").replace(/\s*\x60\x60\x60$/, "");
+      const parsed = JSON.parse(cleaned);
+      if (typeof parsed.html !== "string" || !parsed.html.toLowerCase().includes("<html")) {
+        throw new Error(`${provider} returned no complete HTML preview`);
+      }
+      return { html: parsed.html, provider };
+    } catch (error) {
+      failures.push(`${provider}: ${String(error.message || error)}`);
+      console.error(`${provider} preview generation failed:`, error.message || error);
+    }
+  }
+  const error = new Error(failures.length ? failures.join(" | ") : "No AI provider is configured.");
+  error.statusCode = 503;
+  throw error;
+}
+
 function safeProjectName(value) {
   const cleaned = String(value || "buildyourdream-project").toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 48);
   return cleaned || "buildyourdream-project";
@@ -153,14 +182,9 @@ app.post("/api/preview-project", async (req, res) => {
   if (!prompt) return res.status(400).json({ error: "Please describe the website you want to preview." });
   if (prompt.length > 4000) return res.status(413).json({ error: "Please keep the description under 4,000 characters." });
   try {
-    const generated = await generateProject(prompt);
-    const cleaned = generated.raw.trim().replace(/^\x60\x60\x60(?:json)?\s*/i, "").replace(/\s*\x60\x60\x60$/, "");
-    const parsed = JSON.parse(cleaned);
-    const files = validateFiles(parsed);
-    const preview = files.find((file) => file.path.toLowerCase() === "frontend/preview.html");
-    if (!preview) return res.status(422).json({ error: "The AI response did not include frontend/preview.html. Please try again." });
+    const generated = await generatePreviewHtml(prompt);
     res.setHeader("Cache-Control", "no-store");
-    return res.json({ previewHtml: preview.content, projectName: safeProjectName(parsed.projectName), summary: parsed.summary || "" });
+    return res.json({ previewHtml: generated.html, projectName: "website-preview", summary: `Preview generated with ${generated.provider}.` });
   } catch (error) {
     console.error("Website preview generation failed:", error.message || error);
     return res.status(error.statusCode || 502).json({ error: error.message || "Website preview generation failed. Please try again." });
