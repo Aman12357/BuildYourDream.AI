@@ -70,7 +70,7 @@ export default function StaffWorkspace({ onBack }: { onBack: () => void }) {
     patchProject(selected.id, { finalPrice: amount, stage: "Approved" });
     setNotice("Final price approved. The manager can now assign work to the team.");
   }
-  function addTask(event: React.FormEvent) {
+  function addTask(event: FormEvent) {
     event.preventDefault();
     if (!taskTitle.trim()) return;
     patchProject(selected.id, { tasks: [...selected.tasks, { id: Date.now(), title: taskTitle.trim(), owner: taskOwner, status: "Todo" }], stage: "In progress" });
