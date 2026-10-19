@@ -187,56 +187,51 @@ function App() {
         <div className="topbar-right"><span className="prototype-chip"><span/> Frontend prototype</span><button className="help-button" onClick={() => { setNotice("This prototype calls /api/plan and /api/preview-project. The generated HTML is displayed in a sandboxed iframe; agent cards are workflow visibility, not separate autonomous services."); setView("studio"); }}>How it works</button><span className="top-avatar">A</span></div>
       </header>
 
-      {view === "home" && <div className="builder-home">
-        <section className="builder-home-hero">
-          <div className="home-hero-copy">
-            <div className="home-eyebrow"><span/> YOUR IDEA, YOUR WEBSITE <span className="home-eyebrow-line"/></div>
-            <h1>Make a website<br/>that feels <em>like you.</em></h1>
-            <p className="home-hero-description">Start with a conversation. Get a custom website direction, explore thousands of layouts, and shape the result around your vision.</p>
-            <div className="home-hero-actions">
-              <button className="home-primary-button" onClick={() => { setView("studio"); setNotice(""); document.getElementById("website-prompt")?.focus(); }}>Create with AI <ArrowRight size={16}/></button>
-              <button className="home-secondary-button" onClick={() => setView("templates")}>Explore templates <LayoutTemplate size={16}/></button>
-            </div>
-            <div className="home-trust-line"><span><Check size={13}/> Start with a prompt</span><span><Check size={13}/> Preview before launch</span><span><Check size={13}/> Desktop & mobile</span></div>
-          </div>
-          <div className="home-hero-visual" aria-label="Illustration of a website being created">
-            <div className="home-float-tag"><Sparkles size={14}/> Your vision, built with AI</div>
-            <div className="home-browser-card">
-              <div className="home-browser-top"><span/><span/><span/><div>yourbrand.site</div><i>↗</i></div>
-              <div className="home-mock-site">
-                <div className="home-mock-nav"><b>FORME<span>.</span></b><span>Studio</span><span>Journal</span><span>About</span><i>Let's talk ↗</i></div>
-                <div className="home-mock-hero"><div><small>DESIGNED FOR WHAT'S NEXT</small><strong>Make room<br/>for <em>better.</em></strong><p>Thoughtful design for brands with something to say.</p><span>Explore our work ↗</span></div><div className="home-mock-photo"><div className="home-photo-shape shape-one"/><div className="home-photo-shape shape-two"/><div className="home-photo-label">OBJECTS / 2026</div></div></div>
-                <div className="home-mock-bottom"><span>Independent creative studio</span><span>Scroll to explore ↓</span></div>
-              </div>
-            </div>
-            <div className="home-float-card"><span className="home-float-icon"><Check size={15}/></span><div><strong>Responsive by design</strong><small>Layouts for every screen</small></div></div>
-            <div className="home-orb home-orb-one"/><div className="home-orb home-orb-two"/>
+      {view === "home" && <div className="wix-home">
+        <section className="wix-welcome-row">
+          <div><div className="wix-kicker"><Sparkles size={14}/> YOUR WEBSITE WORKSPACE</div><h1>Good morning, welcome to your dashboard</h1><p>Everything you need to plan, build, and manage your website in one place.</p></div>
+          <button className="wix-primary" onClick={() => { setView("studio"); setNotice(""); document.getElementById("website-prompt")?.focus(); }}><Plus size={16}/> Create a website</button>
+        </section>
+
+        <section className="wix-ask-card">
+          <div className="wix-ask-heading"><div className="wix-aria-icon"><Sparkles size={20}/></div><div><h2>What would you like to build today?</h2><p>Describe your idea and let your AI website assistant help you get started.</p></div></div>
+          <textarea aria-label="Describe your website idea" value={prompt} onChange={e => setPrompt(e.target.value)} placeholder="For example: Create a modern website for my business with services, customer reviews, and a contact form…" rows={3} maxLength={1200}/>
+          <div className="wix-ask-footer"><span><ShieldCheck size={14}/> You can review your plan before generating a preview.</span><button className="wix-primary" disabled={busy} onClick={() => startBuild()}>{busy ? <><RefreshCw size={15} className="spin"/> Preparing…</> : <>Start with AI <ArrowRight size={15}/></>}</button></div>
+          {notice && <div className="wix-inline-notice" role="status"><CircleAlert size={15}/>{notice}</div>}
+        </section>
+
+        <section className="wix-overview">
+          <div className="wix-section-title"><div><h2>Website overview</h2><p>Your project at a glance</p></div><button className="wix-quiet-button" onClick={() => setView("projects")}>View projects <ArrowRight size={14}/></button></div>
+          <div className="wix-site-card">
+            <div className="wix-site-identity"><div className="wix-site-icon"><Monitor size={22}/></div><div><strong>{selectedProject === "New website" ? "Your website project" : selectedProject}</strong><span>{plan ? "Your plan is ready to review" : "Your website workspace is ready"}</span></div><span className={plan ? "wix-status ready" : "wix-status"}><i/>{plan ? "Plan ready" : "In progress"}</span></div>
+            <div className="wix-site-details"><div><span>Website plan</span><strong>{plan ? "Prepared" : "Not created yet"}</strong></div><div><span>Preview status</span><strong>{previewHtml ? "Preview available" : "Waiting for generation"}</strong></div><div><span>AI connection</span><strong><i className="wix-green-dot"/> Backend configured</strong></div></div>
+            <div className="wix-site-actions"><button onClick={() => setView("studio")}><Monitor size={15}/> Open website studio</button><button onClick={() => setView("templates")}><LayoutTemplate size={15}/> Choose a template</button><button onClick={() => setView("projects")}><FolderKanban size={15}/> Manage projects</button></div>
           </div>
         </section>
 
-        <section className="home-capability-strip"><span>ONE WORKSPACE TO GO FROM</span><div><span><MessageSquareText size={16}/> Idea</span><ArrowRight size={15}/><span><Layers3 size={16}/> Design</span><ArrowRight size={15}/><span><Monitor size={16}/> Preview</span><ArrowRight size={15}/><span><Sparkles size={16}/> Refine</span></div></section>
-
-        <section className="home-feature-section">
-          <div className="home-section-heading"><div><div className="home-section-kicker">A BETTER WAY TO BUILD</div><h2>AI speed. <em>Your creative control.</em></h2><p>Start automatically, then keep shaping the website until it matches your idea.</p></div><button className="home-text-link" onClick={() => setView("studio")}>Open website studio <ArrowRight size={15}/></button></div>
-          <div className="home-feature-grid">
-            <article className="home-feature-card home-feature-chat"><div className="home-feature-icon"><MessageSquareText size={19}/></div><span className="home-feature-label">01 / CONVERSATIONAL BUILD</span><h3>Describe it in your own words.</h3><p>Turn a natural-language brief into a structured plan, then request a generated website preview from your connected backend.</p><button onClick={() => { setPrompt("Create a complete responsive website from my idea. Ask for missing details, propose a visual direction and page structure, then generate a real website preview with useful interactions."); setView("studio"); setNotice(""); }}>Start with a conversation <ArrowRight size={14}/></button><div className="home-chat-preview"><span className="home-chat-avatar">BY</span><div><small>YOUR BRIEF</small><p>Build a calm, modern site for my design studio…</p></div><Sparkles size={15}/></div></article>
-            <article className="home-feature-card home-feature-templates"><div className="home-feature-icon"><LayoutTemplate size={19}/></div><span className="home-feature-label">02 / DESIGN STARTING POINTS</span><h3>Find a layout that fits.</h3><p>Explore 2,000 template combinations, organized by industry, layout pattern, and visual style.</p><button onClick={() => setView("templates")}>Browse template library <ArrowRight size={14}/></button><div className="home-template-mini"><div/><div/><div/></div></article>
-            <article className="home-feature-card home-feature-edit"><div className="home-feature-icon"><Eye size={19}/></div><span className="home-feature-label">03 / PREVIEW & REFINE</span><h3>See the result as you build.</h3><p>Review the generated HTML in the workspace, switch between desktop and mobile, and open a full-screen preview.</p><button onClick={() => setView("studio")}>Open the preview workspace <ArrowRight size={14}/></button><div className="home-device-mini"><Monitor size={27}/><Smartphone size={20}/><span><Check size={12}/> Desktop + mobile</span></div></article>
+        <section className="wix-quick-section">
+          <div className="wix-section-title"><div><h2>Quick actions</h2><p>Jump straight into the tools you use most</p></div><span className="wix-small-label">WORKSPACE TOOLS</span></div>
+          <div className="wix-quick-grid">
+            <button className="wix-quick-card" onClick={() => { setView("studio"); setNotice(""); }}><span className="wix-quick-icon lilac"><WandSparkles size={19}/></span><span><strong>Create with AI</strong><small>Turn an idea into a website plan</small></span><ArrowRight size={16}/></button>
+            <button className="wix-quick-card" onClick={() => setView("templates")}><span className="wix-quick-icon blue"><LayoutTemplate size={19}/></span><span><strong>Explore templates</strong><small>Browse layouts and visual styles</small></span><ArrowRight size={16}/></button>
+            <button className="wix-quick-card" onClick={() => setView("projects")}><span className="wix-quick-icon green"><FolderKanban size={19}/></span><span><strong>Manage projects</strong><small>Open your current website work</small></span><ArrowRight size={16}/></button>
+            <button className="wix-quick-card" onClick={() => setView("agents")}><span className="wix-quick-icon amber"><Activity size={19}/></span><span><strong>Build activity</strong><small>Review requests and workflow status</small></span><ArrowRight size={16}/></button>
           </div>
         </section>
 
-        <section className="home-business-section">
-          <div className="home-business-copy"><div className="home-section-kicker">MORE THAN A LANDING PAGE</div><h2>Build for what your idea <em>needs next.</em></h2><p>Choose a business direction and we’ll prepare a detailed brief for the AI builder. Availability of real commerce, booking, and publishing integrations depends on the generated code and connected services.</p><button className="home-primary-button" onClick={() => setView("studio")}>Build your next idea <ArrowRight size={15}/></button></div>
-          <div className="home-business-grid">
-            <button onClick={() => { setPrompt("Create a responsive e-commerce website with product categories, product detail pages, a cart interface, shipping and returns information, and a clear checkout integration plan. Clearly mark any payment integration that still needs credentials."); setSelectedProject("Online store"); setView("studio"); setNotice(""); }}><span className="business-feature-icon"><ShoppingBag size={18}/></span><strong>Online store</strong><small>Products, categories & cart</small><ArrowRight size={15}/></button>
-            <button onClick={() => { setPrompt("Create a service-business website with service pages, an appointment booking interface, availability states, contact details, and a clear plan for connecting a real booking provider."); setSelectedProject("Booking website"); setView("studio"); setNotice(""); }}><span className="business-feature-icon"><CalendarDays size={18}/></span><strong>Bookings & services</strong><small>Service pages and scheduling flow</small><ArrowRight size={15}/></button>
-            <button onClick={() => { setPrompt("Create a responsive editorial blog with a featured article, article listing, category filters, article detail layout, author information, and SEO-friendly headings and metadata."); setSelectedProject("Blog and publication"); setView("studio"); setNotice(""); }}><span className="business-feature-icon"><FileSearch size={18}/></span><strong>Blog & publishing</strong><small>Articles and content structure</small><ArrowRight size={15}/></button>
-            <button onClick={() => { setPrompt("Create a search-friendly business website and include suggested page titles, meta descriptions, heading structure, accessible image alt text, internal links, and a practical SEO review checklist."); setSelectedProject("SEO-ready website"); setView("studio"); setNotice(""); }}><span className="business-feature-icon"><ChartNoAxesCombined size={18}/></span><strong>SEO foundations</strong><small>Metadata and optimization checklist</small><ArrowRight size={15}/></button>
+        <section className="wix-bottom-grid">
+          <div className="wix-info-panel"><div className="wix-section-title"><div><h2>Build progress</h2><p>Your current website workflow</p></div><span className="wix-progress-count">{workflowComplete ? "3 of 3" : plan ? "2 of 3" : "1 of 3"}</span></div>
+            <div className="wix-progress-list"><div className="wix-progress-item"><span className="wix-step-icon done"><Check size={14}/></span><div><strong>Workspace created</strong><small>Your project space is ready to use.</small></div><span>Complete</span></div><div className="wix-progress-item"><span className={plan ? "wix-step-icon done" : "wix-step-icon"}>{plan ? <Check size={14}/> : "2"}</span><div><strong>Prepare your website plan</strong><small>Describe the site and review its structure.</small></div><span>{plan ? "Complete" : "Next step"}</span></div><div className="wix-progress-item"><span className={workflowComplete ? "wix-step-icon done" : "wix-step-icon"}>{workflowComplete ? <Check size={14}/> : "3"}</span><div><strong>Generate a website preview</strong><small>See your generated website before moving on.</small></div><span>{workflowComplete ? "Complete" : "Not started"}</span></div></div>
+            <button className="wix-link-button" onClick={() => setView("studio")}>{plan ? "Continue building" : "Complete your first step"} <ArrowRight size={14}/></button>
+          </div>
+          <div className="wix-info-panel wix-tips-panel"><div className="wix-section-title"><div><h2>Helpful tips</h2><p>Get a better result from your first prompt</p></div><Sparkles size={17}/></div>
+            <div className="wix-tip"><span className="wix-tip-number">01</span><div><strong>Tell us who your website is for</strong><p>Include your audience, business, and main goal.</p></div></div>
+            <div className="wix-tip"><span className="wix-tip-number">02</span><div><strong>List the pages you need</strong><p>For example, Home, Services, About, and Contact.</p></div></div>
+            <div className="wix-tip"><span className="wix-tip-number">03</span><div><strong>Describe the look and feel</strong><p>Mention colors, examples, and the style you prefer.</p></div></div>
+            <button className="wix-link-button" onClick={() => { setPrompt("Create a responsive website for my business. Audience: [describe audience]. Goal: [describe goal]. Pages: Home, About, Services, and Contact. Visual style: clean, modern, accessible, and mobile-friendly. Include realistic content and useful interactions."); setView("studio"); setNotice("A guided website brief has been added. Replace the bracketed details with your own."); }}>Use a guided brief <ArrowRight size={14}/></button>
           </div>
         </section>
-
-        <section className="home-steps-section"><div className="home-section-heading"><div><div className="home-section-kicker">FROM IDEA TO FIRST PREVIEW</div><h2>Your next website starts <em>here.</em></h2></div></div><div className="home-steps-grid"><div><span>01</span><h3>Tell us the idea</h3><p>Share your audience, goals, style, and the features you need.</p></div><div><span>02</span><h3>Shape the plan</h3><p>Review the suggested structure before asking the builder to generate.</p></div><div><span>03</span><h3>Preview and improve</h3><p>Inspect the output, switch device views, and refine the brief.</p></div></div><div className="home-bottom-cta"><div><span>READY WHEN YOU ARE</span><h2>Let's make your idea real.</h2></div><button className="home-primary-button" onClick={() => { setView("studio"); setNotice(""); }}>Create with AI <ArrowRight size={16}/></button></div></section>
-        <footer className="home-footer"><a href="#home" onClick={() => setView("home")}><Layers3 size={17}/> BuildYourDream.AI</a><span>Made for your next big idea.</span><div><button onClick={() => setView("templates")}>Templates</button><button onClick={() => setView("studio")}>Website studio</button></div></footer>
+        <footer className="wix-home-footer"><span>BuildYourDream.AI workspace</span><span>Plan your idea. Build your website. Refine at your pace.</span><button onClick={() => setView("studio")}>Open website studio <ArrowRight size={13}/></button></footer>
       </div>}
 
       {view === "studio" && <div className="hybrid-content">
