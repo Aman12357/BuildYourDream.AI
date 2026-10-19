@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Activity, ArrowDownRight, ArrowRight, Bot, CalendarDays, ChartNoAxesCombined, Check, ChevronDown, CircleAlert,
-  CircleCheck, Clock3, Code2, Command, Download, Eye, FileCode2, FileSearch, FolderKanban,
-  GitBranch, Layers3, LayoutDashboard, LayoutTemplate, Menu, MessageSquareText, Maximize2, Minimize2, Monitor, Search, ShoppingBag,
+  Activity, ArrowDownRight, ArrowRight, Bot, Check, ChevronDown, CircleAlert,
+  CircleCheck, Clock3, Code2, Command, Download, Eye, FileCode2, FolderKanban,
+  GitBranch, Layers3, LayoutDashboard, LayoutTemplate, Menu, MessageSquareText, Maximize2, Minimize2, Monitor, Search,
   Play, Plus, RefreshCw, ShieldCheck, Smartphone, Sparkles, Terminal, WandSparkles, X
 } from "lucide-react";
 
